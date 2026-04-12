@@ -1,0 +1,111 @@
+[
+  {
+    "location": "beach at sunset",
+    "settings": "sand, waves, palm trees, blanket",
+    "horizontal_angle": "side view",
+    "vertical_angle": "eye level",
+    "male": "young surfer",
+    "female": "tanned bikini model",
+    "woman_clothes_upperbody": "bikini top",
+    "woman_clothes_lowerbody": "bikini bottom",
+    "woman_footwear": "barefoot",
+    "woman_hairstyle": "wavy beach hair"
+  },
+  {
+    "location": "luxury hotel room",
+    "settings": "king bed, silk sheets, dim lighting, champagne glasses",
+    "horizontal_angle": "frontal view",
+    "vertical_angle": "low angle",
+    "male": "businessman in suit",
+    "female": "elegant woman in dress",
+    "woman_clothes_upperbody": "strapless evening gown",
+    "woman_clothes_lowerbody": "",
+    "woman_footwear": "high heels",
+    "woman_hairstyle": "updo"
+  },
+  {
+    "location": "kitchen",
+    "settings": "countertop, fruit bowl, cooking utensils",
+    "horizontal_angle": "from behind",
+    "vertical_angle": "eye level",
+    "male": "chef in apron",
+    "female": "housewife",
+    "woman_clothes_upperbody": "tank top",
+    "woman_clothes_lowerbody": "short skirt",
+    "woman_footwear": "barefoot",
+    "woman_hairstyle": "messy bun"
+  },
+
+  {
+    "location": "office after hours",
+    "settings": "desk, computer monitors, paperwork",
+    "horizontal_angle": "frontal view",
+    "vertical_angle": "from above",
+    "male": "executive",
+    "female": "secretary",
+    "woman_clothes_upperbody": "button-up blouse",
+    "woman_clothes_lowerbody": "pencil skirt",
+    "woman_footwear": "pumps",
+    "woman_hairstyle": "straight bob"
+  },
+  {
+    "location": "forest clearing",
+    "settings": "fallen log, wildflowers, dappled sunlight",
+    "horizontal_angle": "side view",
+    "vertical_angle": "eye level",
+    "male": "outdoorsman",
+    "female": "hippie girl",
+    "woman_clothes_upperbody": "crochet top",
+    "woman_clothes_lowerbody": "denim cutoff shorts",
+    "woman_footwear": "sandals",
+    "woman_hairstyle": "braided pigtails"
+  },
+  {
+    "location": "penthouse balcony",
+    "settings": "city skyline, patio furniture, wine bottle",
+    "horizontal_angle": "from behind",
+    "vertical_angle": "low angle",
+    "male": "millionaire playboy",
+    "female": "socialite",
+    "woman_clothes_upperbody": "backless cocktail dress",
+    "woman_clothes_lowerbody": "",
+    "woman_footwear": "strappy heels",
+    "woman_hairstyle": "voluminous curls"
+  },
+  {
+    "location": "college dorm room",
+    "settings": "rumpled sheets, textbooks, string lights",
+    "horizontal_angle": "frontal view",
+    "vertical_angle": "eye level",
+    "male": "fraternity brother",
+    "female": "sorority girl",
+    "woman_clothes_upperbody": "oversized sweatshirt",
+    "woman_clothes_lowerbody": "panties",
+    "woman_footwear": "",
+    "woman_hairstyle": "messy waves"
+  },
+  {
+    "location": "vintage car backseat",
+    "settings": "leather seats, rain on windows, streetlights",
+    "horizontal_angle": "close-up side view",
+    "vertical_angle": "eye level",
+    "male": "greaser",
+    "female": "retro pinup",
+    "woman_clothes_upperbody": "off-shoulder sweater",
+    "woman_clothes_lowerbody": "circle skirt",
+    "woman_footwear": "kitten heels",
+    "woman_hairstyle": "victory rolls"
+  },
+  {
+    "location": "art studio",
+    "settings": "paint splatters, canvas, chaise lounge",
+    "horizontal_angle": "frontal view",
+    "vertical_angle": "low angle",
+    "male": "artist",
+    "female": "nude model",
+    "woman_clothes_upperbody": "",
+    "woman_clothes_lowerbody": "",
+    "woman_footwear": "",
+    "woman_hairstyle": "loose updo"
+  }
+]

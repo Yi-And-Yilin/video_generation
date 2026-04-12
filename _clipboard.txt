@@ -1,0 +1,23 @@
+Failed to validate prompt for output 15:
+* StarConditioningLoader 13:
+  - Value not in list: conditioning_file: 'negative_conditioning_ComfyUI_00510__20260410_115822.pt' not in ['positive_conditioning_ComfyUI_00510__20260411_121340.pt', 'negative_conditioning_ComfyUI_00510__20260411_121340.pt', 'negative_conditioning_ComfyUI_00510__20260411_115617.pt', 'positive_conditioning_ComfyUI_00510__20260411_115616.pt', 'neg_conditioning_20260410_124448.pt', 'pos_conditioning_20260410_124448.pt']
+* StarConditioningLoader 12:
+  - Value not in list: conditioning_file: 'positive_conditioning_ComfyUI_00510__20260410_115823.pt' not in ['positive_conditioning_ComfyUI_00510__20260411_121340.pt', 'negative_conditioning_ComfyUI_00510__20260411_121340.pt', 'negative_conditioning_ComfyUI_00510__20260411_115617.pt', 'positive_conditioning_ComfyUI_00510__20260411_115616.pt', 'neg_conditioning_20260410_124448.pt', 'pos_conditioning_20260410_124448.pt']
+Output will be ignored
+invalid prompt: {'type': 'prompt_outputs_failed_validation', 'message': 'Prompt outputs failed validation', 'details': '', 'extra_info': {}}
+
+
+
+
+
+
+在工作流到第二步的时候就出错了，我估计是我们存下来的那个conditioning的file，第二步的工作流没找到，所以你是不是名字没取对，第一个第零步的时候生成的conditioning的file的name和第二个文件流想要去捡起来的那个conditioning file的name不一样. 
+
+这就是底下工作流，你可以去看一下
+
+"C:\SimpleAIHelper\nsfw\projects\wan\workflow\wan_2.2_step3.json"
+"C:\SimpleAIHelper\nsfw\projects\wan\workflow\wan_2.2_step2.json"
+"C:\SimpleAIHelper\nsfw\projects\wan\workflow\wan_2.2_step1.json"
+"C:\SimpleAIHelper\nsfw\projects\wan\workflow\wan_2.2_step0.json"
+
+

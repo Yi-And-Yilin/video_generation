@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Logs
+*.log
+
+# State/Process files
+*.json
+!*.schema.json
+!workflow/**/*.json
+process.json
+task.json
+nsfw_ui_state.json
+
+# Data files
+*.tsv
+*.csv
+
+# Audio/Video
+audio/
+projects/*/clips/
+projects/*/audio/
+*.mp3
+*.mp4
+*.webp
+*.flac
+*.png
+*.jpg
+
+# Temporary files
+projects/*/tasks/
+projects/*/temp_workflows/
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+ehanti

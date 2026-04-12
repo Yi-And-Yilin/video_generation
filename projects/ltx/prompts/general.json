@@ -1,0 +1,104 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_adult_scene",
+      "description": "Generate a detailed multi-scene adult video/script description featuring a female character in explicit scenes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "female_character": {
+            "type": "object",
+            "properties": {
+              "age": {
+                "type": "number",
+                "description": "Age of the female character"
+              },
+              "nationality": {
+                "type": "string",
+                "description": "Country name (e.g. Japanese, Brazilian, Russian)"
+              },
+              "body_shape": {
+                "type": "string",
+                "description": "Body shape description in one or a few words (e.g. slim, curvy, athletic)"
+              },
+              "hair_style": {
+                "type": "string",
+                "description": "Hair style name (e.g. long straight black hair, short blonde bob)"
+              },
+              "wearing": {
+                "type": "string",
+                "description": "Detailed description of what she is wearing. Can be fully clothed, partially clothed, or completely naked, with or without accessories."
+              }
+            },
+            "required": [
+              "age",
+              "nationality",
+              "body_shape",
+              "hair_style",
+              "wearing"
+            ]
+          },
+          "main_location": {
+            "type": "string",
+            "description": "Short but clear location name (e.g. luxury bedroom, beach villa, dark alley)"
+          },
+          "lighting": {
+            "type": "string",
+            "description": "Short lighting description (e.g. soft warm candlelight, neon nightclub lights, bright daylight)"
+          },
+          "art_type": {
+            "type": "string",
+            "description": "Short art style description (e.g. realistic, anime, cinematic, photorealistic)"
+          },
+          "scenes_count": {
+            "type": "number",
+            "description": "Number of scenes to generate"
+          },
+          "scenes": {
+            "type": "array",
+            "description": "List of scenes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "main_sex_act": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of main sex acts in this scene (e.g. ['blowjob', 'doggy style'])"
+                },
+                "first_frame_image_prompt": {
+                  "type": "string",
+                  "description": "Detailed SD-style image prompt. Must be completely self-contained: include full location description, full character appearance, exact clothing/nudity state, lighting, camera angle, composition, and mood. Do not reference any previous scenes."
+                },
+                "video_prompt": {
+                  "type": "string",
+                  "description": "Detailed Sora/Wan-style video prompt. Must be completely self-contained: include full location description, full character appearance, exact clothing/nudity state, lighting, camera angle, composition, and mood. Do not reference any previous scenes."
+                },
+                "audio": {
+                  "type": "string",
+                  "description": "Short description of sounds, moans, dirty talk, or ambient audio"
+                }
+              },
+              "required": [
+                "main_sex_act",
+                "first_frame_image_prompt",
+                "video_prompt",
+                "audio"
+              ]
+            }
+          }
+        },
+        "required": [
+          "female_character",
+          "main_location",
+          "lighting",
+          "art_type",
+          "scenes_count",
+          "scenes"
+        ]
+      }
+    }
+  }
+]

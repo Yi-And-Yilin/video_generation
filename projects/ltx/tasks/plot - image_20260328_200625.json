@@ -1,0 +1,51 @@
+
+Thinking:
+The user wants me to write a script for a sequential adult movie featuring a mature female teacher and a younger male student in a classroom setting. They want a proper buildup with a clear beginning, middle, and end.
+
+Key requirements:
+- Scenes count >= 10
+- First scene(s) should NOT be explicit sex (to introduce characters)
+- Seamless transitions between positions
+- Keep character details consistent
+- Female and male characters (heterosexual)
+- Classroom setting
+- Descriptive, visually rich prompts
+
+Let me design a complete story with all the necessary parameters. I'll need to think about:
+
+1. Character details - I'll make the female teacher mature (maybe 35-40), the male student younger (18-20)
+2. Location - Classroom with specific lighting
+3. Scenes - 10-12 scenes total
+4. Plot progression from subtle interactions to full sex scenes
+
+Let me map out 10-12 scenes:
+- Scene 1: Introduction - teacher grading papers, student approaches
+- Scene 2: Tension building - physical contact
+- Scene 3: First intimacy (maybe still semi-casual)
+- Scene 4: Full sex position 1
+- Scene 5: Transition to new position
+- Scene 6: Different angle/excitement
+- Scene 7: Climax area
+- Scene 8: Transition
+- Scene 9: Different position
+- Scene 10: Resolution/end
+
+Wait, I need to make sure I use all the right fields. Let me create a comprehensive JSON structure with both character specs and scenes array.
+
+I'll create 12 scenes to give good flow. For the first 2-3 scenes, is_it_an_explicit_sex_scene will be false, then ramp up to true.
+
+Let me fill in all the character details with consistency in mind:
+
+Female Teacher:
+- Name: Elena Vance
+- Age: 38 years old
+- Nationality: American
+- Body shape: Curvy hourglass
+- Hair: Long chestnut brown, tied back sometimes
+- Face: Heart-shaped, full lips
+- Upper body: Button-down dress or blouse
+
+
+- Lower body: Skirt or pencil skirt
+- Lighting: Warm afternoon classroom sun
+- Art type: Cinematic realisticError during Ollama call: Object of type ToolCall is not JSON serializable

@@ -1,0 +1,80 @@
+[2026-03-26 13:35:59] Starting LTX workflow: 10 steps, Upscale: False
+[2026-03-26 13:35:59] Running step 1/10
+[2026-03-26 13:36:00] Step 1 completed (placeholder)
+[2026-03-26 13:36:00] Running step 2/10
+[2026-03-26 13:36:01] Step 2 completed (placeholder)
+[2026-03-26 13:36:01] Running step 3/10
+[2026-03-26 13:36:02] Step 3 completed (placeholder)
+[2026-03-26 13:36:02] Running step 4/10
+[2026-03-26 13:36:02] Pause requested. Will pause after current step completes.
+[2026-03-26 13:36:03] Step 4 completed (placeholder)
+[2026-03-26 13:36:03] Paused at step 4. Process saved.
+[2026-03-26 20:01:07] Found paused process. Click Resume to continue.
+[2026-03-26 20:12:42] Cleared local state files: process.json, task.json
+[2026-03-26 20:14:26] Starting LTX workflow: 10 steps, Upscale: False
+[2026-03-26 20:14:26] --- Running Step 1/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 1 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 2/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 2 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 3/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 3 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 4/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 4 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 5/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 5 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 6/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 6 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 7/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 7 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 8/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 8 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 9/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 9 completed. task.json saved.
+[2026-03-26 20:14:26] --- Running Step 10/10 ---
+[2026-03-26 20:14:26] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:14:26] Step 10 completed. task.json saved.
+[2026-03-26 20:14:26] All steps completed!
+[2026-03-26 20:14:26] Process file cleared.
+[2026-03-26 20:27:55] Starting LTX workflow: 1 steps, Upscale: False
+[2026-03-26 20:27:55] --- Running Step 1/1 ---
+[2026-03-26 20:27:55] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 20:31:53] Step 1 completed. task.json saved.
+[2026-03-26 20:31:53] All steps completed!
+[2026-03-26 20:31:53] Process file cleared.
+[2026-03-26 21:02:25] Starting LTX workflow: 1 steps, Upscale: False
+[2026-03-26 21:02:25] --- Running Step 1/1 ---
+[2026-03-26 21:02:25] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 21:05:02] Cleared local state files: process.json, task.json
+[2026-03-26 21:05:22] Step 1 completed. task.json saved.
+[2026-03-26 21:05:22] All steps completed!
+[2026-03-26 21:05:22] Process file cleared.
+[2026-03-26 21:09:40] Starting LTX workflow: 1 steps, Upscale: False
+[2026-03-26 21:09:40] --- Running Step 1/1 ---
+[2026-03-26 21:09:40] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 21:24:41] Starting LTX workflow: 1 steps, Upscale: False
+[2026-03-26 21:24:41] --- Running Step 1/1 ---
+[2026-03-26 21:24:41] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 21:26:03] Step 1 completed. task.json saved.
+[2026-03-26 21:26:03] All steps completed!
+[2026-03-26 21:26:03] Process file cleared.
+[2026-03-26 21:51:41] Starting LTX workflow: 1 steps, Upscale: False
+[2026-03-26 21:51:41] --- Running Step 1/1 ---
+[2026-03-26 21:51:41] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 21:52:58] Step 1 completed. task.json saved.
+[2026-03-26 21:52:58] All steps completed!
+[2026-03-26 21:52:58] Process file cleared.
+[2026-03-26 22:00:12] Starting LTX workflow: 1 steps, Upscale: False
+[2026-03-26 22:00:12] --- Running Step 1/1 ---
+[2026-03-26 22:00:12] Calling Ollama (model: huihui_ai/qwen3.5-abliterated:9b)...
+[2026-03-26 22:01:13] Step 1 completed. task.json saved.
+[2026-03-26 22:01:13] All steps completed!
+[2026-03-26 22:01:13] Process file cleared.

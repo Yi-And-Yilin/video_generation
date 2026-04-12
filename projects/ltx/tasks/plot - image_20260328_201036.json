@@ -1,0 +1,76 @@
+{
+  "female_character_name": "Elena Morrison",
+  "female_character_age": "35 years old",
+  "female_character_nationality": "American",
+  "female_character_body_shape": "voluptuous and curvy",
+  "female_character_hair": "long, wavy chestnut brown hair",
+  "female_character_face": "heart-shaped with full lips",
+  "female_character_breasts": "generous C-cups",
+  "female_character_waist": "nipped-in waist",
+  "female_character_hips": "wide, seductive hips",
+  "female_character_breasts_show_with_clothes_on": true,
+  "female_character_bra": "black lacy bra visible under blouse",
+  "female_character_upper_body_wearing": "tight black blouse",
+  "female_character_lower_body_wearing": "pencil skirt",
+  "female_character_shoes": "black knee-high leather boots",
+  "female_character_toes": "none",
+  "female_character_pearl": "small pearl stud in left ear",
+  "female_character_stockings": "sheer black thigh-high stockings",
+  "female_character_waist_accessories": "thin gold chain belt",
+  "female_character_earrings": "small pearl stud in left ear",
+  "female_character_ring": "gold band on left ring finger",
+  "female_character_tattoo": "delicate floral vine on left ribcage",
+  "main_location": "University Classroom",
+  "lighting": "warm afternoon sunlight streaming through large windows",
+  "art_type": "cinematic photorealistic",
+  "scenes_count": 10,
+  "male_character_name": "James Carter",
+  "male_character_age": "19 years old",
+  "male_character_nationality": "British",
+  "male_character_hair": "short, tousled sandy blonde hair",
+  "male_character_upper_body_wearing": "simple white button-up shirt",
+  "male_character_lower_body_wearing": "fitted gray dress pants",
+  "male_character_shoes": "loafers",
+  "scenes": [
+    {"index": 1, "is_it_an_explicit_sex_scene": false, "plot": "Elena Morrison stands confidently at the front of the classroom, adjusting her tight black blouse and pencil skirt while her student James Carter stares from his desk, taking notes on the equation she's writing on the whiteboard with warm sunlight catching her curves"},
+    {"index": 2, "is_it_an_explicit_sex_scene": false, "plot": "She walks down to James's desk, leaning over him to help with his assignment, her chest pressing against his notebook, creating undeniable tension as she whispers instructions into his ear and runs a hand along his shoulder"},
+    {"index": 3, "is_it_an_explicit_sex_scene": false, "plot": "He reaches up to hold her waist, pulling her down to the edge of his desk where she straddles him slowly, her black blouse riding up to reveal the edge of her lacy bra while her thighs squeeze around his hips"},
+    {"index": 4, "is_it_an_explicit_sex_scene": true, "plot": "The first explicit encounter - she stands fully between his legs at his desk, lips meeting in a passionate kiss while her stockings-clad legs frame him, her hands gripping his hair as he lifts his head to groan"},
+    {"index": 5, "is_it_an_explicit_sex_scene": true, "plot": "He grabs her hips to lift her higher, moving to a standing position with her kneeling on the edge of the desk, her hands tangled in his hair while she kisses down his neck and collarbone with renewed intensity"},
+    {"index": 6, "is_it_an_explicit_sex_scene": true, "plot": "She stands up and walks him over to the nearby bookshelf, turning the desk against a wall, now in doggy position with her hands braced against the wood and her chest heaving, her floral tattoo visible through the thin blouse"},
+    {"index": 7, "is_it_an_explicit_sex_scene": true, "plot": "From behind he grips her thighs to pull her deeper, then flips her over with a strong motion, returning to face-to-face position with the desk now cushioning her back, her expression a mix of academic composure and raw desire"},
+    {"index": 8, "is_it_an_explicit_sex_scene": true, "plot": "The climax builds as she arches back, one leg wrapping around his neck for better leverage, her hands running up his chest, both of them breathing heavily as the afternoon light dims and they're lost in each other"},
+    {"index": 9, "is_it_an_explicit_sex_scene": false, "plot": "The moment settles into breathless afterglow, her chest still heaving against him as he strokes her hair, the classroom feeling smaller and warmer than it had moments before, with James admiring her beauty in the dim light"},
+    {"index": 10, "is_it_an_explicit_sex_scene": true, "plot": "She pulls him up one last time for a final passionate embrace, her hands running through his hair, both of them lost in each other as the afternoon light begins to fade, ending the scene with a lingering kiss that cements the memory of this afternoon"}
+  ]
+}
+[VALIDATION_ERROR]: Missing required property: 'male_character_face'
+
+[RETRY_PROMPT]: Your previous response had the following error: Missing required property: 'male_character_face'. Please correct it and ensure it follows the schema/format perfectly.
+
+Thinking:
+The user is now complaining about a missing `male_character_face` field! So I need to trace through the schema again to see what else might be missing. Let me look at the schema from the beginning:
+
+From the system prompt, the required fields seem to be:
+- female_character_name
+- female_character_age
+- female_character_nationality
+- male_character_name
+- male_character_age
+- male_character_hair
+- main_location
+- lighting
+- art_type
+- scenes_count
+- scenes
+
+But the user is pointing out I'm missing `male_character_face`. So I need to make sure ALL the required fields are consistent. Let me look at what fields are actually in the schema...
+
+Looking at the original schema from the system prompt, I see:
+- `female_character_face`
+- `male_character_hair`
+- `male_character_face`
+
+So I need to make sure the male's face is included! Let me create a cleaner, more thorough response that includes all the required fields, especially `male_character_face`.
+
+Let me rebuild this more carefully:Error during Ollama call: Object of type ToolCall is not JSON serializable

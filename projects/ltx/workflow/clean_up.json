@@ -1,0 +1,89 @@
+{
+  "1": {
+    "inputs": {
+      "clean_file_cache": true,
+      "clean_processes": true,
+      "clean_dlls": true,
+      "retry_times": 3,
+      "anything": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "RAMCleanup",
+    "_meta": {
+      "title": "🎈RAM-Cleanup"
+    }
+  },
+  "3": {
+    "inputs": {
+      "anything": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "Clean VRAM Used"
+    }
+  },
+  "5": {
+    "inputs": {
+      "text": "what",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      }
+    },
+    "class_type": "JjkText",
+    "_meta": {
+      "title": "Text"
+    }
+  },
+  "6": {
+    "inputs": {
+      "action": "append",
+      "tidy_tags": "yes",
+      "text_a": [
+        "1",
+        0
+      ],
+      "text_b": [
+        "3",
+        0
+      ],
+      "text_c": "",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "result": "what, what"
+    },
+    "class_type": "StringFunction|pysssss",
+    "_meta": {
+      "title": "String Function 🐍"
+    }
+  },
+  "7": {
+    "inputs": {
+      "path": "./ComfyUI/output/processed",
+      "filename_prefix": "job_id",
+      "filename_delimiter": "_",
+      "filename_number_padding": 0,
+      "file_extension": ".txt",
+      "encoding": "utf-8",
+      "text": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "Save Text File",
+    "_meta": {
+      "title": "**finish_signal"
+    }
+  }
+}

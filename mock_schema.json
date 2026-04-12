@@ -1,0 +1,34 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_image_prompt",
+      "description": "Generates a detailed prompt for an AI image generator.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "The main subject of the image."
+          },
+          "style": {
+            "type": "string",
+            "description": "The artistic style (e.g., realistic, anime, oil painting)."
+          },
+          "lighting": {
+            "type": "string",
+            "description": "The lighting conditions."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "A list of descriptive tags."
+          }
+        },
+        "required": ["subject", "style", "tags"]
+      }
+    }
+  }
+]

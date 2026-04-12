@@ -1,0 +1,30 @@
+{
+  "female_character": {
+    "name": "Elena Martinez",
+    "age": "34",
+    "hair": "Long, chestnut brown wavy hair with golden brown highlights",
+    "eyes": "Hazel with striking lashes",
+    "build": "Curvy and confident with a D-cup chest",
+    "body_type": "Athletic hourglass figure",
+    "outfit": "Black knee-length pencil skirt, white fitted blouse, black heeled pumps",
+    "accessories": "Pearl earrings, teacher's glasses hanging on blouse",
+    "makeup": "Natural but polished with red lips",
+    "expression": "Playful with a hint of mischief"}
+}
+[VALIDATION_ERROR]: Missing required property: 'male_character'
+
+[RETRY_PROMPT]: Your previous response had the following error: Missing required property: 'male_character'. Please correct it and ensure it follows the schema/format perfectly.
+
+Thinking:
+The user is pointing out that my previous JSON response was missing the 'male_character' property. I need to create a complete JSON that includes all the required fields. Let me structure it properly:
+
+Required properties:
+- female_character
+- male_character
+- main_location
+- lighting
+- art_type
+- scenes_count
+- scenes (array that matches scenes_count exactly)
+
+Let me create a well-structured JSON with 10-12 scenes, making sure the character descriptions are detailed and the positions transition smoothly from one to the next.Error during Ollama call: Object of type ToolCall is not JSON serializable

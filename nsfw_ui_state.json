@@ -1,0 +1,15 @@
+[
+    {
+        "image_path": "D:\\ComfyUI_windows_portable\\ComfyUI\\input\\ComfyUI_00510_.png",
+        "filename": "ComfyUI_00510_.png",
+        "filename_base": "ComfyUI_00510_",
+        "video_prompt": "\u7537\u751f\u6b63\u5728\u5feb\u4e50\u7684\u7b11\u7740\uff0c\u7a81\u7136\u4ed6\u50cf\u662f\u611f\u89c9\u5230\u4ec0\u4e48\u5f02\u6837\uff0c\u4ed6\u8d76\u6025\u5411\u684c\u5b50\u4e0b\u9762\u7684\u81ea\u5df1\u7684\u811a\u5e95\u770b\u53bb\uff0c\u7136\u540e\u518d\u4e00\u8138\u8be7\u5f02\u7684\u770b\u5411\u5973\u751f\u3002\u800c\u5973\u751f\u5168\u7a0b\u90fd\u8fd8\u662f\u82e5\u65e0\u5176\u4e8b\u7684\u7b11\u7740\u3002",
+        "audio_prompt": "",
+        "seconds": "4",
+        "side": "720",
+        "category": "NA",
+        "upscale": false,
+        "audio": false,
+        "batch": "1"
+    }
+]

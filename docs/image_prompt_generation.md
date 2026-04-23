@@ -85,7 +85,7 @@ For each selected row, parse these fields based on their value:
 | male_body_part | If 1/2/3 (after 50% resolve), adds "1man" to prompt. Value 3 has 50% chance of being ignored. |
 | head | Add female hair style (from character) + `female_character.accessories.hair` + `ear` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | face | Add `face` + `makeup` + `accessories.face` if 1/2/3. Value 3 has 50% chance of being ignored. |
-| chest | Add `top` + `neck` + `waist` + `belly` + `bra` if 1/2/3. Value 3 has 50% chance of being ignored. |
+| chest | Add `top` + `neck` + `waist` + `belly` + `bra` if 1/2/3. Value 3 has 50% chance of being ignored. If female body_shape is "Curvy", "Voluptuous", or "Chubby", also adds "cleavage". |
 | back | Add "woman's back" + `top` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | thigh | Add `accessories.thigh` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | leg | Add `legs` + `accessories.ankle` if 1/2/3. Value 3 has 50% chance of being ignored. |

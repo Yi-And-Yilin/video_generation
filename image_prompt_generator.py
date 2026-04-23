@@ -264,6 +264,11 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
         if chest_parts:
             prompt_parts.append(", ".join(chest_parts))
 
+        # Add "cleavage" if female body_shape is Curvy, Voluptuous, or Chubby
+        female_body_shape = (female_char or {}).get("body_shape", "").lower()
+        if female_body_shape in ("curvy", "voluptuous", "chubby"):
+            prompt_parts.append("cleavage")
+
     if back in ("1", "2"):
         back_parts = ["woman's back"]
         female_back_top = location.get("female_character", {}).get("top", "").strip()

@@ -8,6 +8,11 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(SCRIPT_DIR, "image_prompt_main_lookup.csv")
 
 
+def _skip(val: str) -> bool:
+    """Return True if the value should be skipped (empty or literal 'None')."""
+    return not val or val.strip() in ("", "None")
+
+
 def build_character_string(character: dict, gender: str) -> str:
     parts = []
 
@@ -257,23 +262,23 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
         prompt_parts.append(male_char_str)
 
     if has_male_upper:
-        male_top = location.get("male_character", {}).get("top", "").strip()
-        if male_top:
-            prompt_parts.append(male_top)
+        male_top = location.get("male_character", {}).get("top", "")
+        if male_top and not _skip(male_top):
+            prompt_parts.append(male_top.strip())
 
     if has_male_lower:
-        male_bottom = location.get("male_character", {}).get("bottom", "").strip()
-        if male_bottom:
-            prompt_parts.append(male_bottom)
+        male_bottom = location.get("male_character", {}).get("bottom", "")
+        if male_bottom and not _skip(male_bottom):
+            prompt_parts.append(male_bottom.strip())
 
     if has_male_feet:
-        male_shoes = location.get("male_character", {}).get("shoes", "").strip()
-        if male_shoes:
-            prompt_parts.append(male_shoes)
+        male_shoes = location.get("male_character", {}).get("shoes", "")
+        if male_shoes and not _skip(male_shoes):
+            prompt_parts.append(male_shoes.strip())
 
     if has_male_croth:
         male_penis = male_char.get("penis", "").strip()
-        if male_penis:
+        if male_penis and male_penis.lower() != "medium":
             prompt_parts.append(male_penis)
 
     # Add "1man" if any of male_head, male_upper, or male_body_part is non-zero
@@ -322,46 +327,46 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
         head_parts = []
         if female_hair_str:
             head_parts.append(female_hair_str)
-        female_hair_acc = location.get("female_character", {}).get("accessories", {}).get("hair", "").strip()
-        female_ear = location.get("female_character", {}).get("accessories", {}).get("ear", "").strip()
-        if female_hair_acc:
-            head_parts.append(female_hair_acc)
-        if female_ear:
-            head_parts.append(female_ear)
+        female_hair_acc = location.get("female_character", {}).get("accessories", {}).get("hair", "")
+        female_ear = location.get("female_character", {}).get("accessories", {}).get("ear", "")
+        if female_hair_acc and not _skip(female_hair_acc):
+            head_parts.append(female_hair_acc.strip())
+        if female_ear and not _skip(female_ear):
+            head_parts.append(female_ear.strip())
         if head_parts:
             prompt_parts.append(", ".join(head_parts))
 
     if face in ("1", "2"):
         face_parts = []
-        female_face = location.get("female_character", {}).get("face", "").strip()
-        female_makeup = location.get("female_character", {}).get("makeup", "").strip()
-        female_face_acc = location.get("female_character", {}).get("accessories", {}).get("face", "").strip()
-        if female_face:
-            face_parts.append(female_face)
-        if female_makeup:
-            face_parts.append(female_makeup)
-        if female_face_acc:
-            face_parts.append(female_face_acc)
+        female_face = location.get("female_character", {}).get("face", "")
+        female_makeup = location.get("female_character", {}).get("makeup", "")
+        female_face_acc = location.get("female_character", {}).get("accessories", {}).get("face", "")
+        if female_face and not _skip(female_face):
+            face_parts.append(female_face.strip())
+        if female_makeup and not _skip(female_makeup):
+            face_parts.append(female_makeup.strip())
+        if female_face_acc and not _skip(female_face_acc):
+            face_parts.append(female_face_acc.strip())
         if face_parts:
             prompt_parts.append(", ".join(face_parts))
 
     if chest in ("1", "2"):
         chest_parts = []
-        female_top = location.get("female_character", {}).get("top", "").strip()
-        female_neck = location.get("female_character", {}).get("accessories", {}).get("neck", "").strip()
-        female_waist = location.get("female_character", {}).get("accessories", {}).get("waist", "").strip()
-        female_belly = location.get("female_character", {}).get("accessories", {}).get("belly", "").strip()
-        female_bra = location.get("female_character", {}).get("bra", "").strip()
-        if female_top:
-            chest_parts.append(female_top)
-        if female_neck:
-            chest_parts.append(female_neck)
-        if female_waist:
-            chest_parts.append(female_waist)
-        if female_belly:
-            chest_parts.append(female_belly)
-        if female_bra:
-            chest_parts.append(female_bra)
+        female_top = location.get("female_character", {}).get("top", "")
+        female_neck = location.get("female_character", {}).get("accessories", {}).get("neck", "")
+        female_waist = location.get("female_character", {}).get("accessories", {}).get("waist", "")
+        female_belly = location.get("female_character", {}).get("accessories", {}).get("belly", "")
+        female_bra = location.get("female_character", {}).get("bra", "")
+        if female_top and not _skip(female_top):
+            chest_parts.append(female_top.strip())
+        if female_neck and not _skip(female_neck):
+            chest_parts.append(female_neck.strip())
+        if female_waist and not _skip(female_waist):
+            chest_parts.append(female_waist.strip())
+        if female_belly and not _skip(female_belly):
+            chest_parts.append(female_belly.strip())
+        if female_bra and not _skip(female_bra):
+            chest_parts.append(female_bra.strip())
         if chest_parts:
             prompt_parts.append(", ".join(chest_parts))
 
@@ -372,43 +377,43 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
 
     if back in ("1", "2"):
         back_parts = ["woman's back"]
-        female_back_top = location.get("female_character", {}).get("top", "").strip()
-        if female_back_top:
-            back_parts.append(female_back_top)
+        female_back_top = location.get("female_character", {}).get("top", "")
+        if female_back_top and not _skip(female_back_top):
+            back_parts.append(female_back_top.strip())
         prompt_parts.append(", ".join(back_parts))
 
     if thigh in ("1", "2"):
-        female_thigh = location.get("female_character", {}).get("accessories", {}).get("thigh", "").strip()
-        if female_thigh:
-            prompt_parts.append(female_thigh)
+        female_thigh = location.get("female_character", {}).get("accessories", {}).get("thigh", "")
+        if female_thigh and not _skip(female_thigh):
+            prompt_parts.append(female_thigh.strip())
 
     if leg in ("1", "2"):
         leg_parts = []
-        female_legs = location.get("female_character", {}).get("legs", "").strip()
-        female_ankle = location.get("female_character", {}).get("accessories", {}).get("ankle", "").strip()
-        if female_legs:
-            leg_parts.append(female_legs)
-        if female_ankle:
-            leg_parts.append(female_ankle)
+        female_legs = location.get("female_character", {}).get("legs", "")
+        female_ankle = location.get("female_character", {}).get("accessories", {}).get("ankle", "")
+        if female_legs and not _skip(female_legs):
+            leg_parts.append(female_legs.strip())
+        if female_ankle and not _skip(female_ankle):
+            leg_parts.append(female_ankle.strip())
         if leg_parts:
             prompt_parts.append(", ".join(leg_parts))
 
     if feet in ("1", "2"):
-        female_shoes = location.get("female_character", {}).get("shoes", "").strip()
-        if female_shoes:
-            prompt_parts.append(female_shoes)
+        female_shoes = location.get("female_character", {}).get("shoes", "")
+        if female_shoes and not _skip(female_shoes):
+            prompt_parts.append(female_shoes.strip())
 
     if hand in ("1", "2"):
         hand_parts = []
-        female_finger = location.get("female_character", {}).get("accessories", {}).get("finger", "").strip()
-        female_wrist = location.get("female_character", {}).get("accessories", {}).get("wrist", "").strip()
-        female_finger_nail = location.get("female_character", {}).get("accessories", {}).get("finger_nail", "").strip()
-        if female_finger:
-            hand_parts.append(female_finger)
-        if female_wrist:
-            hand_parts.append(female_wrist)
-        if female_finger_nail:
-            hand_parts.append(female_finger_nail)
+        female_finger = location.get("female_character", {}).get("accessories", {}).get("finger", "")
+        female_wrist = location.get("female_character", {}).get("accessories", {}).get("wrist", "")
+        female_finger_nail = location.get("female_character", {}).get("accessories", {}).get("finger_nail", "")
+        if female_finger and not _skip(female_finger):
+            hand_parts.append(female_finger.strip())
+        if female_wrist and not _skip(female_wrist):
+            hand_parts.append(female_wrist.strip())
+        if female_finger_nail and not _skip(female_finger_nail):
+            hand_parts.append(female_finger_nail.strip())
         if hand_parts:
             prompt_parts.append(", ".join(hand_parts))
 

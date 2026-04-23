@@ -66,6 +66,45 @@ def resolve_field_value(val: str) -> str:
     return val
 
 
+def resolve_nipples_value(nipples_val: str, female_char: dict) -> str:
+    """
+    Handle nipples field value='3' with weighted random outcomes:
+      30% -> '' (ignore)
+      30% -> nipples_value + 'nipples slip'
+      20% -> 'clothed nipples, nipple outline, nipples visible through fabric'
+      20% -> nipples_value + 'nipples visible through fabric, see-through nipples'
+
+    For nipples_val '1' or '2', returns the actual nipples text from female_char.
+    For nipples_val '0' or resolved '0', returns ''.
+    """
+    nipples_value = female_char.get("nipples", "").strip()
+
+    if nipples_val == "3":
+        roll = random.random()
+        if roll < 0.3:
+            # 30%: ignore
+            return ""
+        elif roll < 0.6:
+            # 30%: nipples + "nipples slip"
+            if nipples_value:
+                return nipples_value + ", nipples slip"
+            return "nipples slip"
+        elif roll < 0.8:
+            # 20%: clothed nipples preset
+            return "clothed nipples, nipple outline, nipples visible through fabric"
+        else:
+            # 20%: nipples + "nipples visible through fabric, see-through nipples"
+            if nipples_value:
+                return nipples_value + ", nipples visible through fabric, see-through nipples"
+            return "nipples visible through fabric, see-through nipples"
+    elif nipples_val in ("1", "2"):
+        # Return the actual nipples text from character design
+        return nipples_value
+    else:
+        # nipples_val is "0" or resolved to "0"
+        return ""
+
+
 def load_lookup_csv():
     rows = []
     with open(CSV_PATH, 'r', encoding='utf-8') as f:
@@ -213,9 +252,11 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
     feet = resolve_field_value(row.get("feet", "").strip())
     arm = row.get("arm", "").strip()
     hand = resolve_field_value(row.get("hand", "").strip())
-    nipples = resolve_field_value(row.get("nipples", "").strip())
+    nipples_raw = row.get("nipples", "").strip()
 
-    has_nipples = nipples in ("1", "2")
+    nipples_result = resolve_nipples_value(nipples_raw, female_char or {})
+    if nipples_result:
+        prompt_parts.append(nipples_result)
 
     if head in ("1", "2"):
         head_parts = []
@@ -310,11 +351,6 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
             hand_parts.append(female_finger_nail)
         if hand_parts:
             prompt_parts.append(", ".join(hand_parts))
-
-    if has_nipples:
-        female_nipples = female_char.get("nipples", "").strip()
-        if female_nipples:
-            prompt_parts.append(female_nipples)
 
     return prompt_parts, extra_condition, extra_condition_2
 

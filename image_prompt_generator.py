@@ -136,12 +136,14 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
     male_lower = resolve_field_value(row.get("male_lower", "").strip())
     male_feet = resolve_field_value(row.get("male_feet", "").strip())
     male_croth = resolve_field_value(row.get("male_croth", "").strip())
+    male_body_part = resolve_field_value(row.get("male_body_part", "").strip())
 
     has_male = male in ("1", "2") or male_head in ("1", "2")
     has_male_upper = male_upper in ("1", "2")
     has_male_lower = male_lower in ("1", "2")
     has_male_feet = male_feet in ("1", "2")
     has_male_croth = male_croth in ("1", "2")
+    has_male_body_part = male_body_part in ("1", "2")
 
     if has_male:
         prompt_parts.append(male_char_str)
@@ -165,6 +167,10 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
         male_penis = male_char.get("penis", "").strip()
         if male_penis:
             prompt_parts.append(male_penis)
+
+    # Add "1man" if any of male_head, male_upper, or male_body_part is non-zero
+    if male_head in ("1", "2") or male_upper in ("1", "2") or has_male_body_part:
+        prompt_parts.append("1man")
 
     crotch = resolve_field_value(row.get("crotch", "").strip())
     bottom = resolve_field_value(row.get("bottom", "").strip())

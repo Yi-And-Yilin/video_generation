@@ -73,8 +73,8 @@ For each selected row, parse these fields based on their value:
 | extra_condition | Include value directly (may contain placeholders) |
 | extra_condition_2 | Include value directly (may contain placeholders) |
 | male | Add male character string if 1/2/3 (only once if male_head also non-zero). Value 3 has 50% chance of being ignored. |
-| male_head | Add male character string if 1/2/3 (only once if male also non-zero). Value 3 has 50% chance of being ignored. |
-| male_upper | Add `male_character.top` if 1/2/3. Value 3 has 50% chance of being ignored. |
+| male_head | Adds male character string if 1/2/3 AND adds "1man" if 1/2/3 (after resolve). Value 3 has 50% chance of being ignored. |
+| male_upper | Adds `male_character.top` if 1/2/3 AND adds "1man" if 1/2/3 (after resolve). Value 3 has 50% chance of being ignored. |
 | male_lower | Add `male_character.bottom` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | male_feet | Add `male_character.shoes` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | man_hand | Ignore |
@@ -82,7 +82,7 @@ For each selected row, parse these fields based on their value:
 | crotch | Add `female_character.panties` + `,` + `female_character.bottom` + `,` + `female_character.pussy` if 1/2. Value 3 has 50% chance of being ignored. Value 0 keeps existing behavior (no addition). |
 | bottom | First determine `bottom_adv` based on female body_shape: "small " for Thin/Slender, "" for Medium, "big " for Curvy/Voluptuous/Chubby. Then add `bottom_adv + "ass" + ", " + female_character.bottom` if 1/2. Value 3 has 50% chance of being ignored. Value 0 keeps existing behavior (no addition). |
 | nipples | Add `character_design.female.nipples` if 1/2. Value 3 has 50% chance of being ignored. Value 0 is ignored. |
-| male_body_part | Ignore |
+| male_body_part | If 1/2/3 (after 50% resolve), adds "1man" to prompt. Value 3 has 50% chance of being ignored. |
 | head | Add female hair style (from character) + `female_character.accessories.hair` + `ear` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | face | Add `face` + `makeup` + `accessories.face` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | chest | Add `top` + `neck` + `waist` + `belly` + `bra` if 1/2/3. Value 3 has 50% chance of being ignored. |

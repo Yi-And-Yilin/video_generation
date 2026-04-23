@@ -105,6 +105,75 @@ def resolve_nipples_value(nipples_val: str, female_char: dict) -> str:
         return ""
 
 
+def resolve_crotch_value(crotch_val: str, female_char: dict, location: dict, leg_raw: str, bottom_active: bool) -> str:
+    """
+    Handle crotch field with weighted random outcomes for value='3':
+      40% -> '' (ignore)
+      40% -> panties + ", pulled aside" + pussy + (optionally bottom if bottom field not active)
+      20% -> panties + (if leg is 1/2/3 then ", on legs" else ", on thighs") + pussy + (optionally bottom)
+
+    For crotch=1/2, returns the standard behavior (panties + pussy + optionally bottom).
+    For crotch=0, returns ''.
+
+    Parameters
+    ----------
+    crotch_val : str
+        Raw value from CSV row (before resolve_field_value).
+    female_char : dict
+        The character_design.female dict (for pussy).
+    location : dict
+        The location dict (for female_character.panties, bottom).
+    leg_raw : str
+        Raw leg field value from CSV (before resolve_field_value).
+    bottom_active : bool
+        Whether the CSV `bottom` field resolved to non-zero.
+    """
+    female_panties = location.get("female_character", {}).get("panties", "").strip()
+    female_bottom = location.get("female_character", {}).get("bottom", "").strip()
+    female_pussy = female_char.get("pussy", "").strip()
+
+    def build_with_bottom():
+        """Build the standard crotch fragment: panties (+ optionally bottom) + pussy."""
+        result = ""
+        if female_panties:
+            if female_bottom and not bottom_active:
+                result = female_panties + "," + female_bottom
+            else:
+                result = female_panties
+        if female_pussy:
+            if result:
+                result = result + "," + female_pussy
+            else:
+                result = female_pussy
+        return result
+
+    if crotch_val == "3":
+        roll = random.random()
+        if roll < 0.4:
+            # 40%: ignore
+            return ""
+        elif roll < 0.8:
+            # 40%: panties + pulled aside + pussy (+ optionally bottom)
+            base = build_with_bottom()
+            if base:
+                return base + ", pulled aside"
+            return "pulled aside"
+        else:
+            # 20%: panties + (on legs or on thighs) + pussy (+ optionally bottom)
+            base = build_with_bottom()
+            leg_is_active = leg_raw in ("1", "2", "3")
+            if base:
+                if leg_is_active:
+                    return base + ", on legs"
+                else:
+                    return base + ", on thighs"
+            return "on legs" if leg_is_active else "on thighs"
+    elif crotch_val in ("1", "2"):
+        return build_with_bottom()
+    else:
+        return ""
+
+
 def load_lookup_csv():
     rows = []
     with open(CSV_PATH, 'r', encoding='utf-8') as f:
@@ -211,23 +280,14 @@ def parse_row_to_prompt_parts(row, male_char_str, female_char_str, female_hair_s
     if male_head in ("1", "2") or male_upper in ("1", "2") or has_male_body_part:
         prompt_parts.append("1man")
 
-    crotch = resolve_field_value(row.get("crotch", "").strip())
+    crotch_raw = row.get("crotch", "").strip()
     bottom = resolve_field_value(row.get("bottom", "").strip())
 
-    has_crotch = crotch in ("1", "2")
     has_bottom = bottom in ("1", "2")
 
-    if has_crotch:
-        female_panties = location.get("female_character", {}).get("panties", "").strip()
-        female_bottom = location.get("female_character", {}).get("bottom", "").strip()
-        female_pussy = location.get("female_character", {}).get("pussy", "").strip()
-        if female_panties:
-            if female_bottom and not has_bottom:
-                prompt_parts.append(female_panties + "," + female_bottom)
-            else:
-                prompt_parts.append(female_panties)
-        if female_pussy:
-            prompt_parts.append(female_pussy)
+    crotch_result = resolve_crotch_value(crotch_raw, female_char or {}, location, row.get("leg", "").strip(), has_bottom)
+    if crotch_result:
+        prompt_parts.append(crotch_result)
 
     if has_bottom:
         female_bottom = location.get("female_character", {}).get("bottom", "").strip()

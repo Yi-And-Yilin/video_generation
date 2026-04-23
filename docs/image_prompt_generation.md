@@ -79,7 +79,7 @@ For each selected row, parse these fields based on their value:
 | male_feet | Add `male_character.shoes` if 1/2/3. Value 3 has 50% chance of being ignored. |
 | man_hand | Ignore |
 | male_croth | Add `character_design.male.penis` if 1/2. Value 3 has 50% chance of being ignored. Value 0 is ignored. |
-| crotch | Add `female_character.panties` + `,` + `female_character.bottom` + `,` + `female_character.pussy` if 1/2. Value 3 has 50% chance of being ignored. Value 0 keeps existing behavior (no addition). |
+| crotch | `panties` + (optionally `, bottom` if `bottom` field is not active) + `, pussy` if 1/2. Value 0 is ignored. Value 3: 40% ignored, 40% adds `panties` + `, pulled aside` + `, pussy` + (optionally bottom), 20% adds `panties` + (if `leg` is 1/2/3 then `, on legs` else `, on thighs`) + `, pussy` + (optionally bottom). |
 | bottom | First determine `bottom_adv` based on female body_shape: "small " for Thin/Slender, "" for Medium, "big " for Curvy/Voluptuous/Chubby. Then add `bottom_adv + "ass" + ", " + female_character.bottom` if 1/2. Value 3 has 50% chance of being ignored. Value 0 keeps existing behavior (no addition). |
 | nipples | Add `character_design.female.nipples` if 1/2. Value 0 is ignored. Value 3: 30% ignore, 30% add `nipples` + ", nipples slip", 20% add "clothed nipples, nipple outline, nipples visible through fabric", 20% add `nipples` + ", nipples visible through fabric, see-through nipples". |
 | male_body_part | If 1/2/3 (after 50% resolve), adds "1man" to prompt. Value 3 has 50% chance of being ignored. |

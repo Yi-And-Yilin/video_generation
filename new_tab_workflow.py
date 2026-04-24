@@ -187,7 +187,14 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         except:
             scene_data = None
     else:
+        # Fallback: try parsing raw JSON directly (LLM may output without [TOOL_CALLS] wrapper)
         scene_data = None
+        stripped = scene_response.strip()
+        if stripped.startswith("{"):
+            try:
+                scene_data = json.loads(stripped)
+            except:
+                pass
 
     if scene_data:
         if "scenes" in scene_data and "locations" not in scene_data:

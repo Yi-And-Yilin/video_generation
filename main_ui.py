@@ -151,6 +151,14 @@ class VideoGenerationApp:
         self.new_log_queue = Queue()
         self.new_tab_last_job_id = None
 
+        # Copy Log button (New tab)
+        new_log_btn_frame = tk.Frame(new_right)
+        new_log_btn_frame.pack(fill=tk.X, pady=(5, 0))
+        self.new_copy_log_button = tk.Button(
+            new_log_btn_frame, text="Copy Log", command=self._new_tab_copy_log, width=10
+        )
+        self.new_copy_log_button.pack(side=tk.LEFT, padx=(0, 5))
+
         # WAN Tab
         wan_tab = tk.Frame(self.main_notebook)
         self.main_notebook.add(wan_tab, text="WAN")
@@ -1384,6 +1392,19 @@ class VideoGenerationApp:
                 self.root.after(0, lambda: self.new_stop_button.config(state=tk.DISABLED))
 
         threading.Thread(target=run_thread, daemon=True).start()
+
+    def _new_tab_copy_log(self):
+        """Copy the New tab log to clipboard."""
+        try:
+            self.new_log_window.configure(state='normal')
+            log_text = self.new_log_window.get("1.0", tk.END)
+            self.new_log_window.configure(state='disabled')
+            if log_text.strip():
+                self.root.clipboard_empty()
+                self.root.clipboard_append(log_text)
+                self.root.update()  # needed so clipboard stays after window closes
+        except Exception as e:
+            self.root.after(0, lambda: self.new_status_var.set(f"Error copying log: {e}"))
 
 if __name__ == "__main__":
     root = tk.Tk(); app = VideoGenerationApp(root); root.mainloop()

@@ -100,6 +100,7 @@ class StandardWorkflowParams:
     image_neg_prompt: str = ""
     negative_prompt: str = ""
     audio_prompt: str = ""
+    video_prompt: str = ""
 
     # === Conditioning ===
     save_pos_conditioning: str = ""
@@ -525,14 +526,23 @@ def extract_params_for_wan_video(task_path: str, work_id: str = "",
     wid = work_id or task.get("job_id", "unknown")
 
     # Extract first positive prompt from location design
+    # After Phase 4: prompts is array of {image_prompt, video_prompt} dicts
+    # Before Phase 4: prompts is array of strings or {sex_act, prompt} dicts
     loc_design = task.get("location_design", {})
     locations = loc_design.get("locations", [])
     video_pos = ""
+    image_pos = ""
     if locations:
         loc = locations[0]
         prompts = loc.get("prompts", [])
         if prompts:
-            video_pos = prompts[0]
+            first_prompt = prompts[0]
+            if isinstance(first_prompt, dict):
+                video_pos = first_prompt.get("video_prompt", "")
+                image_pos = first_prompt.get("image_prompt", "")
+            else:
+                video_pos = str(first_prompt)
+                image_pos = str(first_prompt)
 
     return StandardWorkflowParams(
         job_id=task.get("job_id", ""),
@@ -542,7 +552,8 @@ def extract_params_for_wan_video(task_path: str, work_id: str = "",
         video_width=width,
         video_height=height,
         video_seconds=seconds,
-        video_pos_prompt=video_pos,
+        video_pos_prompt=video_pos or image_pos,
+        video_prompt=video_pos,
         load_image=f"{wid}.png",
         save_pos_conditioning=f"pos_{wid}",
         save_neg_conditioning=f"neg_{wid}",
@@ -581,6 +592,71 @@ def create_default_image_params(work_id: str, prompt: str = "",
         negative_prompt=default_neg,
         save_video=work_id,
     )
+
+
+def new_tab_task_to_ltx_batch_tasks(task_path: str) -> List[Dict]:
+    """
+    Convert a New Tab task.json (after Phase 4) to a list of task dicts 
+    suitable for BatchRunner.run_batch().
+    
+    Each prompt in each location becomes a separate task entry.
+    The prompt uses the image_prompt field for the image generation prompt
+    and the video_prompt field for the video generation prompt.
+    
+    Returns a list of dicts like:
+    [
+        {
+            "work_id": "<job_id>_scene0_act0",
+            "main_sex_act": "kissing",
+            "prompt": "A kissing scene in bedroom",
+            "video_pos_prompt": "She leans forward slowly こんにちは soft rain sounds soft young female voice",
+            "negative_prompt": "...",
+        },
+        ...
+    ]
+    """
+    with open(task_path, 'r', encoding='utf-8') as f:
+        task = json.load(f)
+    
+    job_id = task.get("job_id", "unknown")
+    locations = task.get("location_design", {}).get("locations", [])
+    
+    default_neg = ("lowres, bad anatomy, bad hands, text, error, missing fingers, "
+                   "extra digit, fewer digits, cropped, worst quality, low quality, "
+                   "normal quality, jpeg artifacts, signature, watermark, username, blurry")
+    
+    tasks = []
+    for scene_idx, loc in enumerate(locations):
+        prompts = loc.get("prompts", [])
+        main_sex_act = loc.get("main_sex_act", [])
+        sex_act_list = main_sex_act if isinstance(main_sex_act, list) else [main_sex_act]
+        sex_act = sex_act_list[0] if sex_act_list else ""
+        
+        for prompt_idx, prompt_obj in enumerate(prompts):
+            if isinstance(prompt_obj, dict):
+                image_prompt = prompt_obj.get("image_prompt", "")
+                video_prompt = prompt_obj.get("video_prompt", "")
+                prompt_sex_act = prompt_obj.get("sex_act", sex_act)
+                if not prompt_sex_act and sex_act_list:
+                    prompt_sex_act = sex_act_list[0]
+            else:
+                image_prompt = prompt_obj
+                video_prompt = prompt_obj
+                prompt_sex_act = sex_act
+            
+            work_id = f"{job_id}_scene{scene_idx}_act{prompt_idx}"
+            
+            tasks.append({
+                "work_id": work_id,
+                "main_sex_act": prompt_sex_act,
+                "prompt": image_prompt,
+                "video_pos_prompt": video_prompt,
+                "negative_prompt": default_neg,
+                "scene_index": scene_idx,
+                "prompt_index": prompt_idx,
+            })
+    
+    return tasks
 
 
 def validate_params(params: StandardWorkflowParams, required_fields: List[str] = None) -> List[str]:

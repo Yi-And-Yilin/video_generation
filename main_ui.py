@@ -149,6 +149,7 @@ class VideoGenerationApp:
         self.new_log_window = scrolledtext.ScrolledText(new_right, height=20, state='disabled', width=60)
         self.new_log_window.pack(fill=tk.BOTH, expand=True)
         self.new_log_queue = Queue()
+        self.new_tab_last_job_id = None
 
         # WAN Tab
         wan_tab = tk.Frame(self.main_notebook)
@@ -1168,6 +1169,7 @@ class VideoGenerationApp:
                 if not self.new_tab_comfyui_cancel_event.is_set():
                     self.new_log_queue.put(f"--- Done: {total_workflows} workflows processed ---")
                     self.root.after(0, lambda: self.new_status_var.set(f"Done: {total_workflows} workflows"))
+                    self.new_tab_last_job_id = job_id
 
             except Exception as e:
                 import traceback
@@ -1178,6 +1180,64 @@ class VideoGenerationApp:
                 self.root.after(0, lambda: self.new_stop_comfyui_button.config(state=tk.DISABLED))
 
         threading.Thread(target=run_thread, daemon=True).start()
+
+    def new_tab_run_ltx_video_generation(self):
+        """
+        Entry point to start LTX video generation from the New Tab workflow.
+        Reads task.json, converts to batch tasks, and starts the batch runner.
+        """
+        import threading
+        from projects.ltx.batch_runner import BatchRunner
+        from projects.ltx.parameter_extraction import new_tab_task_to_ltx_batch_tasks
+        
+        if not hasattr(self, 'new_tab_last_job_id') or not self.new_tab_last_job_id:
+            self.new_log_queue.put("No job to run — please complete the New Tab workflow first.")
+            return
+        
+        job_id = self.new_tab_last_job_id
+        task_path = os.path.join("tasks", job_id, "task.json")
+        
+        if not os.path.exists(task_path):
+            self.new_log_queue.put(f"task.json not found: {task_path}")
+            return
+        
+        try:
+            tasks = new_tab_task_to_ltx_batch_tasks(task_path)
+            self.new_log_queue.put(f"Converted {len(tasks)} tasks for LTX video generation")
+            
+            if not tasks:
+                self.new_log_queue.put("No tasks to run for video generation.")
+                return
+            
+            # Start batch runner in background
+            def run_ltx_batch():
+                runner = BatchRunner(
+                    comfyui_url=self.comfyui_url if hasattr(self, 'comfyui_url') else None,
+                    output_folder=self.output_folder if hasattr(self, 'output_folder') else None,
+                    input_folder=self.input_folder if hasattr(self, 'input_folder') else None,
+                    processed_folder=self.processed_folder if hasattr(self, 'processed_folder') else None,
+                    log_func=lambda msg: self.root.after(0, lambda m=msg: self.new_log_queue.put(f"[LTX] {m}"))
+                )
+                result = runner.run_batch(
+                    job_id=job_id,
+                    tasks=tasks,
+                    width=1280,
+                    height=720,
+                    length=241,
+                    fps=24,
+                    image_model="pornmaster_proSDXLV8"
+                )
+                self.root.after(0, lambda: self.new_log_queue.put(
+                    f"LTX batch complete: {len(result['completed'])} completed, "
+                    f"{len(result['failed'])} failed"
+                ))
+            
+            threading.Thread(target=run_ltx_batch, daemon=True).start()
+            self.new_log_queue.put("LTX video generation started in background")
+            
+        except Exception as e:
+            import traceback
+            self.new_log_queue.put(f"Error starting LTX video generation: {e}\n{traceback.format_exc()}")
 
     def _discover_and_save_image_with_metadata(self, history, filename_prefix, location, prompt_label, progress_label):
         """

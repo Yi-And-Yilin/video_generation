@@ -343,6 +343,7 @@ class BatchRunner:
                     height=height,
                     length=length,
                     prompt=prompt,
+                    video_pos_prompt=task.get("video_pos_prompt", ""),
                     work_id=work_id
                 )
                 
@@ -391,6 +392,7 @@ class BatchRunner:
                     height=height,
                     length=length,
                     prompt=prompt,
+                    video_pos_prompt=task.get("video_pos_prompt", ""),
                     work_id=work_id
                 )
                 

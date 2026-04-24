@@ -350,6 +350,119 @@ Output files follow the pattern: `<job_id>_scene_<index>_act_<sex_act>.png` (wit
 
 ---
 
+### 7. Image Metadata Injection (continued — see above)
+
+**File:** `new_tab_workflow.py`, `main_ui.py::new_tab_run_comfyui()`
+
+After ComfyUI generates images, metadata is embedded into each PNG file and organized into an `output_images/` directory.
+
+**Image Discovery:**
+Images are discovered by scanning the ComfyUI history output for nodes with `type == "output"` and an `images` array. Each image entry contains a filename and subfolder path.
+
+**Metadata Structure:**
+```json
+{
+  "prompt": "...",
+  "video_prompt": "...",
+  "sex_act": "...",
+  "male_character": {...},
+  "female_character": {...},
+  "location": "...",
+  "job_id": "...",
+  "timestamp": "..."
+}
+```
+
+**File Naming Convention:**
+Output files follow the pattern: `<job_id>_scene_<index>_act_<sex_act>.png` (with safe character sanitization for filesystem compatibility).
+
+**Embedding Process:**
+1. Load the PNG image using PIL/Pillow.
+2. Serialize the metadata to JSON.
+3. Encode the JSON as a bytes string.
+4. Create a `PngImagePlugin.PngInfo` object and add the metadata with `add_text("Prompt", ...)`.
+5. Save the image with `pil_image.save(output_path, pnginfo=metadata)`.
+
+---
+
+### 8. LTX Video Generation
+
+**Purpose:** After ComfyUI image generation completes (Phase 1 in the New Tab), users can start LTX video generation. The system bridges the New Tab's `task.json` to the LTX batch runner.
+
+**Pipeline flow:**
+```
+Task.json (Phase 4 completed)
+    ↓
+new_tab_run_ltx_video_generation() [main_ui.py]
+    ↓ reads task.json → new_tab_task_to_ltx_batch_tasks()
+    ↓ converts to BatchRunner task list
+    ↓
+BatchRunner.run_batch() [projects/ltx/batch_runner.py]
+    ↓ Phase 1: Image generation (via wan_image workflow)
+    ↓ Phase 2: Text encoding (ltx-text-encoding)
+    ↓ Phase 3: Sampling (ltx_sampling) — uses video_pos_prompt for conditioning
+    ↓ Phase 4: Latent decode (ltx_latent) — decodes final video
+    ↓
+Final MP4 videos in ComfyUI output folder
+```
+
+**Bridge function: `new_tab_task_to_ltx_batch_tasks(task_path)`**
+
+**File:** `projects/ltx/parameter_extraction.py`, line ~597
+
+Converts New Tab `task.json` (after Phase 4) into a list of task dicts for BatchRunner. Each prompt in each location becomes a separate task entry. Extracts `image_prompt` for image generation and `video_prompt` for video generation. Handles both new format (`{image_prompt, video_prompt}` dicts) and old format (string prompts).
+
+**Video prompt propagation:**
+- `extract_params_for_wan_video()` now extracts `video_prompt` from the Phase 4+ format (`projects/ltx/parameter_extraction.py`, line ~541)
+- `generate_api_workflow()` accepts `video_pos_prompt` and `video_prompt` parameters (`projects/ltx/workflow_generator.py`, line ~392)
+- For video workflows (text encoding, sampling), `video_pos_prompt` overrides the default `prompt` parameter
+- The actual video prompt (action + line + audio + voice) is injected into the LTX conditioning nodes
+
+**Task dict format for BatchRunner:**
+```python
+{
+    "work_id": "<job_id>_scene<idx>_act<idx>",
+    "main_sex_act": "kissing",
+    "prompt": "A kissing scene in bedroom",       # for image generation
+    "video_pos_prompt": "action line audio voice", # for video generation
+    "negative_prompt": "lowres, bad anatomy, ...",
+    "scene_index": 0,
+    "prompt_index": 0,
+}
+```
+
+**Entry point: `new_tab_run_ltx_video_generation()`**
+
+**File:** `main_ui.py`, line ~1184
+
+Called after ComfyUI image generation completes. Reads `new_tab_last_job_id` to find `task.json`, converts tasks, and starts `BatchRunner.run_batch()` in a background thread. Logs progress to the New Tab log panel.
+
+**Video prompt flow:**
+1. Phase 4 generates `video_prompt = "{action} {line} {audio} {female_character_sound}".strip()`
+2. Bridge function extracts it and passes to `video_pos_prompt`
+3. `generate_api_workflow()` uses `video_pos_prompt` for text encoding and sampling
+4. LTX conditioning nodes receive the full video prompt with dialogue and audio cues
+
+**Batch runner phases:**
+
+| Phase | Purpose | Template | Notes |
+|-------|---------|----------|-------|
+| Phase 1 | Image generation | `wan_image` | Uses `prompt` field for positive prompt, generates reference images |
+| Phase 2 | Text encoding | `ltx-text-encoding` | Extracts conditioning latents using `video_pos_prompt` |
+| Phase 3 | Sampling | `ltx_sampling` | Generates video latents with `video_pos_prompt` for conditioning |
+| Phase 4 | Latent decode | `ltx_latent` | Decodes final video frames to MP4 |
+
+**Configuration defaults:**
+- Width: 1280px
+- Height: 720px
+- Length: 241 frames
+- FPS: 24
+- Image model: `pornmaster_proSDXLV8`
+
+**Important:** Source image files are deleted after Phase 3 sampling completes. Failed tasks are skipped in subsequent phases.
+
+---
+
 ## Run ComfyUI
 
 After the LLM pipeline completes and `task.json` is saved, users can click **"Run ComfyUI"** to send generated image workflows to a ComfyUI instance.
@@ -459,8 +572,8 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 │  │ 5. POST to ComfyUI API                                   │         │
 │  └──────────────────────────────────────────────────────────┘         │
 └────────────────────────────────────────────────────────────────────────┘
-                    │
-                    ▼
+                     │
+                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                  LLM Backend (Ollama)                       │
 │                  ComfyUI API                           │
@@ -472,6 +585,27 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 │  Placeholders: apply_placeholders_unified(**XXX**)          │      │
 │  Z-mode template: z-image.json (placeholder tokens)         │      │
 └─────────────────────────────────────────────────────────────┘
+                     │
+                     ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│              LTX Video Generation (main_ui.py::new_tab_run_ltx)       │
+│  ┌──────────────────────────────────────────────────────────┐         │
+│  │ new_tab_run_ltx_video_generation()                       │         │
+│  │   • Reads task.json from new_tab_last_job_id             │         │
+│  │   • new_tab_task_to_ltx_batch_tasks() → BatchRunner tasks│         │
+│  │   • Starts BatchRunner.run_batch() in background thread  │         │
+│  │                                                            │         │
+│  │ BatchRunner.run_batch() — 4-phase pipeline:              │         │
+│  │   Phase 1: Image generation  (wan_image)                 │         │
+│  │   Phase 2: Text encoding     (ltx-text-encoding)         │         │
+│  │   Phase 3: Sampling          (ltx_sampling,              │         │
+│  │                              video_pos_prompt conditioning)│       │
+│  │   Phase 4: Latent decode     (ltx_latent → MP4)          │         │
+│  │                                                            │         │
+│  │ Config: 1280x720, 241 frames, 24fps                      │         │
+│  │ Log: [LTX] prefix in New Tab log panel                   │         │
+│  └──────────────────────────────────────────────────────────┘         │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -489,6 +623,11 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 | `parameter_extraction.StandardWorkflowParams` | Unified parameter dataclass across all workflow templates |
 | `parameter_extraction.extract_params_from_new_tab_task()` | Extracts params from task.json for ComfyUI workflows; detects Z-mode dict prompts |
 | `parameter_extraction.extract_params_from_z_mode_task()` | Wrapper for Z-mode task extraction |
+| `parameter_extraction.extract_params_for_wan_video()` | Extracts WAN video params from task.json; handles Phase 4+ `video_prompt` format |
+| `parameter_extraction.new_tab_task_to_ltx_batch_tasks()` | Converts New Tab task.json to BatchRunner task list with `video_pos_prompt` |
+| `projects/ltx/batch_runner.BatchRunner` | Orchestrates 4-phase LTX video batch pipeline |
+| `projects/ltx/batch_runner.BatchRunner.run_batch()` | Runs image generation → text encoding → sampling → latent decode |
+| `projects/ltx/workflow_generator.generate_api_workflow()` | Generates ComfyUI workflow JSON; accepts `video_pos_prompt` override |
 | `tasks/<job_id>/` | Directory where each job's `task.json` and intermediate files are stored |
 | `projects/wan/workflow/{root,image,video}/*.json` | ComfyUI workflow templates loaded by TemplateCatalog |
 | `projects/wan/workflow/image/z-image.json` | Z-mode ComfyUI workflow template with `**XXX**` placeholder tokens |
@@ -513,6 +652,12 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 | ComfyUI connection fails | Error logged; individual scene failures don't stop processing of remaining scenes |
 | Z-mode template not found (z-image) | Error during ComfyUI execution; status shows error message |
 | Z-mode LLM returns malformed prompts | `extract_params_from_new_tab_task()` handles gracefully with defaults |
+| LTX video generation — no job loaded | Status shows "No job to run — please complete the New Tab workflow first." |
+| LTX video generation — task.json missing | Status shows "task.json not found: <path>" |
+| LTX video generation — no tasks | Status shows "No tasks to run for video generation." |
+| LTX batch runner — ComfyUI failure | Failed tasks tracked in result; pipeline continues to next task |
+| LTX batch runner — cancelled | `cancel_event` checked between phases; partial results returned |
+| LTX sampling — latent timeout | Task marked failed if latent files not created within timeout |
 
 ---
 
@@ -534,7 +679,10 @@ image_prompt_generator.py           — Prompt builder
   generate_prompts_for_locations()   — Generates 3 prompts per location (~line 391)
 llm_conversation.py                 — LLM client, Conversation & LLMUtils classes
 workflow_selector.py                — TemplateCatalog, apply_placeholders_unified
-parameter_extraction.py              — StandardWorkflowParams, extract_params_from_new_tab_task(), extract_params_from_z_mode_task()
+parameter_extraction.py              — StandardWorkflowParams, extract_params_from_new_tab_task(), extract_params_for_wan_video(), new_tab_task_to_ltx_batch_tasks()
+projects/ltx/batch_runner.py        — LTX batch runner
+  BatchRunner.run_batch()            — 4-phase pipeline: image → encoding → sampling → decode
+projects/ltx/workflow_generator.py  — generate_api_workflow() with video_pos_prompt support
 projects/wan/workflow/              — ComfyUI workflow templates
   image/  wan_image.json              — SDXL image generation (Tag mode)
           z-image.json                — Z-mode image generation (~line 1045)

@@ -319,15 +319,27 @@ def extract_params_from_new_tab_task(task_path: str, scene_index: int = 0,
     location = locations[scene_index] if scene_index < len(locations) else {}
 
     # Get the prompt for this scene
-    # Z mode: prompts is an array of {sex_act, prompt} objects
-    # Tag mode: prompts is an array of strings
+    # After Phase 4 (Video Prompt Generation): prompts is array of {image_prompt, video_prompt} dicts
+    # Before Phase 4 Z mode: prompts is array of {sex_act, prompt} dicts
+    # Before Phase 4 Tag mode: prompts is array of strings
     prompts = location.get("prompts", [])
     if prompts:
         first_prompt = prompts[min(prompt_index, len(prompts) - 1)]
         if isinstance(first_prompt, dict):
-            prompt = first_prompt.get("prompt", "")
-            sex_act = first_prompt.get("sex_act", "")
+            # Check if this is the new format (Phase 4+) with image_prompt/video_prompt
+            if "image_prompt" in first_prompt:
+                # New format: use image_prompt for image generation
+                prompt = first_prompt.get("image_prompt", "")
+                sex_act = first_prompt.get("sex_act", "")
+            elif "prompt" in first_prompt:
+                # Old Z-mode format: {sex_act, prompt}
+                prompt = first_prompt.get("prompt", "")
+                sex_act = first_prompt.get("sex_act", "")
+            else:
+                prompt = str(first_prompt)
+                sex_act = ""
         else:
+            # Tag mode: prompts is array of strings
             prompt = first_prompt
             sex_act = ""
     else:

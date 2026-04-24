@@ -218,31 +218,53 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
             status_callback("Z mode: Skipping Phase 3 (LLM already generated prompts)")
         with open(task_path, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=4)
+    else:
+        if not locations:
+            if status_callback:
+                status_callback("No locations to generate prompts for.")
+                return result
+
         if status_callback:
-            status_callback(f"All done (Z mode). Saved to: {task_path}")
+            status_callback("Loading image prompt generator...")
+
+        prompts = _generate_prompts_for_locations(
+            locations,
+            result["character_design"],
+            job_id,
+            status_callback
+        )
+
+        # Embed prompts into each location under a "prompts" key (list of 3 strings)
+        for i, loc in enumerate(locations):
+            loc_prompts = prompts[i] if i < len(prompts) else []
+            loc["prompts"] = loc_prompts
+
+    # Check stop before Phase 4
+    if stop_event and stop_event.is_set():
+        if status_callback:
+            status_callback("Stopped by user before video prompt generation.")
         return result
 
-    if not locations:
-        if status_callback:
-            status_callback("No locations to generate prompts for.")
-        return result
-
+    # ============ Phase 4: Video Prompt Generation ============
     if status_callback:
-        status_callback("Loading image prompt generator...")
-
-    prompts = _generate_prompts_for_locations(
+        status_callback("Generating video prompts...")
+    
+    updated_locations = _run_video_prompt_generation(
         locations,
         result["character_design"],
+        user_requirements,
         job_id,
         status_callback
     )
-
-    # Embed prompts into each location under a "prompts" key (list of 3 strings)
-    for i, loc in enumerate(locations):
-        loc_prompts = prompts[i] if i < len(prompts) else []
-        loc["prompts"] = loc_prompts
-
-    result["location_design"]["locations"] = locations
+    
+    if updated_locations is not None:
+        result["location_design"]["locations"] = updated_locations
+        if status_callback:
+            status_callback("Video prompt generation completed successfully.")
+    else:
+        # Video prompt generation failed, keep original prompts
+        if status_callback:
+            status_callback("Warning: Video prompt generation failed, keeping original prompts.")
 
     # Final save
     with open(task_path, 'w', encoding='utf-8') as f:
@@ -252,6 +274,197 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         status_callback(f"All done. Saved to: {task_path}")
 
     return result
+
+
+def _build_first_frame_image_prompts(locations):
+    """
+    Build the first_frame_image_prompts list from existing prompts.
+    
+    For each prompt in each location, create an object with:
+    - image_prompt: the original image prompt string
+    - sex_act: extracted from the location's main_sex_act or prompts metadata
+    
+    Returns a list of dicts:
+    [
+        {"image_prompt": "...", "sex_act": "..."},
+        ...
+    ]
+    """
+    first_frame_prompts = []
+    for loc in locations:
+        main_act = loc.get("main_sex_act", [])
+        if isinstance(main_act, list) and main_act:
+            sex_act = main_act[0] if isinstance(main_act[0], str) else str(main_act[0])
+        else:
+            sex_act = "unknown"
+        
+        prompts = loc.get("prompts", [])
+        if not prompts:
+            # If no prompts, create a placeholder
+            first_frame_prompts.append({
+                "image_prompt": f"Scene in {loc.get('location', 'unknown')} location",
+                "sex_act": sex_act
+            })
+        else:
+            for prompt in prompts:
+                if isinstance(prompt, dict):
+                    if "image_prompt" in prompt:
+                        img_prompt = prompt["image_prompt"]
+                        prompt_sex_act = prompt.get("sex_act", sex_act)
+                    else:
+                        img_prompt = prompt.get("prompt", f"Scene in {loc.get('location', 'unknown')}")
+                        prompt_sex_act = prompt.get("sex_act", sex_act)
+                    first_frame_prompts.append({
+                        "image_prompt": img_prompt,
+                        "sex_act": prompt_sex_act
+                    })
+                else:
+                    # Tag mode: prompt is a string
+                    first_frame_prompts.append({
+                        "image_prompt": prompt,
+                        "sex_act": sex_act
+                    })
+    
+    return first_frame_prompts
+
+
+def _run_video_prompt_generation(locations, character_design, user_requirements, job_id, status_callback=None):
+    """
+    Phase 4: Generate video prompts using the video_prompting LLM.
+    
+    For each image prompt, calls the LLM to generate:
+    - action (motion description)
+    - line (Chinese dialogue)
+    - audio (background + movement sounds)
+    - female_character_sound (vocal quality)
+    
+    Then combines them into a video_prompt string.
+    Finally transforms each prompt from a string to:
+    {"image_prompt": "...", "video_prompt": "..."}
+    
+    Returns the locations with updated prompts, or None on failure.
+    """
+    try:
+        from llm_conversation import LLMUtils, Conversation
+    except ImportError:
+        if status_callback:
+            status_callback("Warning: Could not import llm_conversation for video prompt generation")
+        return None
+    
+    if status_callback:
+        status_callback("Generating video prompts...")
+    
+    # Build first_frame_image_prompts from existing data
+    first_frame_prompts = _build_first_frame_image_prompts(locations)
+    if not first_frame_prompts:
+        if status_callback:
+            status_callback("No prompts available for video generation.")
+        return None
+    
+    if status_callback:
+        status_callback(f"Preparing {len(first_frame_prompts)} prompts for video generation...")
+    
+    try:
+        # Load video_prompting schema and template
+        video_schema = load_tool_schema("video_prompting")
+        video_system_prompt = load_prompt_template(
+            "video_prompting",
+            user_requirements=user_requirements,
+            male_character=json.dumps(character_design.get("male", {})),
+            female_character=json.dumps(character_design.get("female", {})),
+            first_frame_image_prompts=json.dumps(first_frame_prompts)
+        )
+    except Exception as e:
+        if status_callback:
+            status_callback(f"Error loading video_prompting files: {e}")
+        return None
+    
+    # Create conversation
+    conv = Conversation(system_prompt=video_system_prompt, tool_schema=video_schema)
+    
+    # Call LLM
+    llm = LLMUtils(base_url="http://localhost:8081", model="qwen")
+    response = ""
+    try:
+        for chunk in llm.chat(conv, "Generate video prompts for each image prompt.", chat_mode="json", max_retries=2):
+            response += chunk
+            if status_callback:
+                status_callback(chunk, end="")
+    except Exception as e:
+        if status_callback:
+            status_callback(f"LLM call failed for video prompting: {e}")
+        return None
+    
+    if status_callback:
+        status_callback("\n")
+    
+    # Parse response
+    video_prompts = None
+    if "[TOOL_CALLS]:" in response:
+        try:
+            tc_start = response.find("[TOOL_CALLS]:")
+            tc_json = response[tc_start + 13:].strip()
+            data = json.loads(tc_json)
+            if isinstance(data, list) and len(data) > 0:
+                video_prompts = data[0].get("function", {}).get("arguments", {})
+                if isinstance(video_prompts, str):
+                    video_prompts = json.loads(video_prompts)
+        except Exception as e:
+            if status_callback:
+                status_callback(f"Error parsing video prompt response: {e}")
+    
+    if not video_prompts or "video_prompts" not in video_prompts:
+        if status_callback:
+            status_callback("Warning: Could not parse video prompts from LLM response")
+        return None
+    
+    vp_list = video_prompts["video_prompts"]
+    if len(vp_list) != len(first_frame_prompts):
+        if status_callback:
+            status_callback(f"Warning: LLM returned {len(vp_list)} video prompts, expected {len(first_frame_prompts)}")
+    
+    # Transform prompts: each prompt becomes {"image_prompt": "...", "video_prompt": "..."}
+    for i, loc in enumerate(locations):
+        prompts = loc.get("prompts", [])
+        if not prompts:
+            continue
+        
+        # Find corresponding video prompts for this location
+        loc_vp_count = len(prompts)
+        loc_vps = vp_list[i:i+loc_vp_count] if i < len(vp_list) else []
+        
+        for j, prompt in enumerate(prompts):
+            if j < len(loc_vps):
+                vp = loc_vps[j]
+                # Combine action + line + audio + female_character_sound into video_prompt
+                video_prompt = " ".join([
+                    vp.get("action", ""),
+                    vp.get("line", ""),
+                    vp.get("audio", ""),
+                    vp.get("female_character_sound", "")
+                ])
+                if isinstance(prompt, dict):
+                    # Z mode: transform dict
+                    prompt["video_prompt"] = video_prompt
+                else:
+                    # Tag mode: transform to dict
+                    prompts[j] = {
+                        "image_prompt": prompt,
+                        "video_prompt": video_prompt
+                    }
+            else:
+                # No video prompt from LLM, use image prompt as video prompt
+                if isinstance(prompt, dict):
+                    if "image_prompt" not in prompt:
+                        prompt["image_prompt"] = prompt.get("prompt", "")
+                    prompt["video_prompt"] = prompt.get("image_prompt", "")
+                else:
+                    prompts[j] = {
+                        "image_prompt": prompt,
+                        "video_prompt": prompt
+                    }
+    
+    return locations
 
 
 def _generate_prompts_for_locations(locations, character_design, job_id, status_callback=None):

@@ -1146,6 +1146,22 @@ class VideoGenerationApp:
                             self.new_log_queue.put(
                                 f"[{progress_label}] Scene {display_idx} ({prompt_label}) timed out")
 
+                        # Discover and save generated image with metadata
+                        try:
+                            saved_image_path = self._discover_and_save_image_with_metadata(
+                                hist, 
+                                f"{base_name}_p{actual_prompt_idx}",
+                                loc,
+                                prompt_label,
+                                progress_label
+                            )
+                            if saved_image_path:
+                                self.new_log_queue.put(
+                                    f"[{progress_label}] Image saved: {os.path.basename(saved_image_path)}")
+                        except Exception as e:
+                            self.new_log_queue.put(
+                                f"[{progress_label}] Warning: Could not save image metadata: {e}")
+
                         time.sleep(0.5)  # Small delay between jobs (like WAN tab)
 
                 # Final status
@@ -1162,6 +1178,114 @@ class VideoGenerationApp:
                 self.root.after(0, lambda: self.new_stop_comfyui_button.config(state=tk.DISABLED))
 
         threading.Thread(target=run_thread, daemon=True).start()
+
+    def _discover_and_save_image_with_metadata(self, history, filename_prefix, location, prompt_label, progress_label):
+        """
+        Discover the generated image from ComfyUI history, inject metadata,
+        and save it locally with prompts embedded.
+        
+        Args:
+            history: The ComfyUI history response dict
+            filename_prefix: Prefix for the output filename
+            location: The location dict from task.json
+            prompt_label: Human-readable prompt label
+            progress_label: Progress label like "1/6"
+        
+        Returns:
+            str: Path to the saved image, or None on failure
+        """
+        try:
+            from PIL import Image as PILImage
+            import json
+            
+            # Discover image from ComfyUI history
+            # Look through all node outputs for images
+            outputs = history.get("outputs", {})
+            image_filename = None
+            image_subfolder = None
+            
+            for node_id, node_output in outputs.items():
+                if "images" in node_output:
+                    for img_info in node_output["images"]:
+                        if img_info.get("type") == "output":
+                            image_filename = img_info.get("filename")
+                            image_subfolder = img_info.get("subfolder", "")
+                            break
+                if image_filename:
+                    break
+            
+            if not image_filename:
+                return None
+            
+            # Construct full path to the image in ComfyUI output
+            image_path = os.path.join(COMFYUI_ROOT, "output", image_subfolder, image_filename)
+            
+            if not os.path.exists(image_path):
+                return None
+            
+            # Extract prompts from location
+            prompts = location.get("prompts", [])
+            image_prompt = ""
+            video_prompt = ""
+            sex_act = ""
+            
+            if prompts:
+                # Get the first prompt (or current prompt if we're tracking)
+                first_prompt = prompts[0]
+                if isinstance(first_prompt, dict):
+                    image_prompt = first_prompt.get("image_prompt", "")
+                    video_prompt = first_prompt.get("video_prompt", "")
+                    # Try to extract sex_act
+                    if "sex_act" in first_prompt:
+                        sex_act = first_prompt["sex_act"]
+                    elif first_prompt.get("prompt"):
+                        image_prompt = first_prompt["prompt"]
+                else:
+                    image_prompt = first_prompt
+            
+            # Extract sex_act from location metadata if available
+            if not sex_act:
+                main_sex_act = location.get("main_sex_act", [])
+                if main_sex_act:
+                    sex_act = main_sex_act[0] if isinstance(main_sex_act[0], str) else str(main_sex_act[0])
+            
+            # Build metadata dict
+            metadata = {
+                "prompt": image_prompt,
+                "video_prompt": video_prompt,
+                "sex_act": sex_act,
+                "location": location.get("location", ""),
+                "job_id": location.get("job_id", ""),
+            }
+            
+            # Inject metadata into PNG file
+            metadata_str = json.dumps(metadata, ensure_ascii=False)
+            
+            img = PILImage.open(image_path)
+            
+            # Convert to RGBA if needed for PNG
+            if img.mode not in ("RGB", "RGBA", "L"):
+                img = img.convert("RGBA")
+            
+            # Create new PNG with metadata
+            output_img = PILImage.new("RGBA", img.size)
+            output_img.paste(img)
+            
+            # Save locally with metadata
+            output_dir = os.path.join(SCRIPT_DIR, "output_images")
+            os.makedirs(output_dir, exist_ok=True)
+            
+            output_filename = f"{filename_prefix}.png"
+            output_path = os.path.join(output_dir, output_filename)
+            
+            # Save with metadata
+            output_img.save(output_path, pnginfo=(("prompt", metadata_str),))
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"Error saving image with metadata: {e}")
+            return None
 
     def new_tab_run(self):
         if hasattr(self, 'new_tab_running') and self.new_tab_running:

@@ -1,0 +1,41 @@
+{
+  "type": "function",
+  "function": {
+    "name": "answer",
+    "description": "Write video prompt for each first frame image. One video prompt for one first frame image prompt.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "video_prompts": {
+          "type": "array",
+          "description": "List of video prompts, each corresponding to a first-frame image prompt.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Description of the action or movement in the video."
+              },
+              "line": {
+                "type": "string",
+                "description": "Dialogue or spoken line (if any) in CHINESE!!"
+              },
+              "audio": {
+                "type": "string",
+                "description": "Background audio,sex action sound effects."
+              },
+              "female_character_sound": {
+                "type": "string",
+                "description": "Vocal quality and age of the female character (e.g., 'cute young girl sound', 'raspy elderly mature lady sound', 'breathy teenager girl sound', 'warm middle-aged woman sound')."
+              }
+            },
+            "required": ["action", "line", "audio", "female_character_sound"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["video_prompts"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,385 @@
+{
+  "1": {
+    "inputs": {
+      "video_latent": [
+        "11",
+        0
+      ],
+      "audio_latent": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "LTXVConcatAVLatent",
+    "_meta": {
+      "title": "LTXVConcatAVLatent"
+    }
+  },
+  "2": {
+    "inputs": {
+      "Number": "640"
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "**width"
+    }
+  },
+  "3": {
+    "inputs": {
+      "value": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Width"
+    }
+  },
+  "4": {
+    "inputs": {
+      "Number": "640"
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "**height"
+    }
+  },
+  "5": {
+    "inputs": {
+      "value": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Height"
+    }
+  },
+  "6": {
+    "inputs": {
+      "resize_type": "scale dimensions",
+      "resize_type.width": [
+        "3",
+        0
+      ],
+      "resize_type.height": [
+        "5",
+        0
+      ],
+      "resize_type.crop": "center",
+      "scale_method": "lanczos",
+      "input": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Resize Image/Mask"
+    }
+  },
+  "7": {
+    "inputs": {
+      "expression": "a/2",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "values.a": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "8": {
+    "inputs": {
+      "image": "z-image-turbo_00014_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "**image"
+    }
+  },
+  "9": {
+    "inputs": {
+      "longer_edge": 1536,
+      "images": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "ResizeImagesByLongerEdge",
+    "_meta": {
+      "title": "Resize Images by Longer Edge"
+    }
+  },
+  "10": {
+    "inputs": {
+      "img_compression": 18,
+      "image": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "LTXVPreprocess",
+    "_meta": {
+      "title": "LTXVPreprocess"
+    }
+  },
+  "11": {
+    "inputs": {
+      "strength": 0.7,
+      "bypass": false,
+      "vae": [
+        "14",
+        2
+      ],
+      "image": [
+        "10",
+        0
+      ],
+      "latent": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "LTXVImgToVideoInplace",
+    "_meta": {
+      "title": "LTXVImgToVideoInplace"
+    }
+  },
+  "14": {
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-dev-fp8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "15": {
+    "inputs": {
+      "width": [
+        "7",
+        1
+      ],
+      "height": [
+        "17",
+        1
+      ],
+      "length": [
+        "18",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLTXVLatentVideo",
+    "_meta": {
+      "title": "EmptyLTXVLatentVideo"
+    }
+  },
+  "16": {
+    "inputs": {
+      "Number": "126"
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "**length"
+    }
+  },
+  "17": {
+    "inputs": {
+      "expression": "a/2",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "values.a": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "18": {
+    "inputs": {
+      "value": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Length"
+    }
+  },
+  "19": {
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-dev-fp8.safetensors"
+    },
+    "class_type": "LTXVAudioVAELoader",
+    "_meta": {
+      "title": "LTXV Audio VAE Loader"
+    }
+  },
+  "22": {
+    "inputs": {
+      "frames_number": [
+        "18",
+        0
+      ],
+      "frame_rate": 25,
+      "batch_size": 1,
+      "audio_vae": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "LTXVEmptyLatentAudio",
+    "_meta": {
+      "title": "LTXV Empty Latent Audio"
+    }
+  },
+  "23": {
+    "inputs": {
+      "text_encoder": "gemma_3_12B_it_fp4_mixed.safetensors",
+      "ckpt_name": "ltx-2.3-22b-dev-fp8.safetensors",
+      "device": "default"
+    },
+    "class_type": "LTXAVTextEncoderLoader",
+    "_meta": {
+      "title": "LTXV Audio Text Encoder Loader"
+    }
+  },
+  "24": {
+    "inputs": {
+      "text": "the waiter is similing",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "**prompt"
+    }
+  },
+  "25": {
+    "inputs": {
+      "filename": "positive_conditioning_preparation_1",
+      "conditioning": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "StarConditioningSaver",
+    "_meta": {
+      "title": "**positive_conditioning"
+    }
+  },
+  "26": {
+    "inputs": {
+      "tensor": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "easy showTensorShape",
+    "_meta": {
+      "title": "Show Tensor Shape"
+    }
+  },
+  "27": {
+    "inputs": {
+      "text": "watermark, text, logo, signature, copyright,noise, compression artifacts, jpeg artifacts, glitches,blurry, pixelated, low resolution, grainy, distorted,distorted face, asymmetric features, extra limbs, deformed hands, blurry eyes, disfigured, low quality, bad anatomy, poorly drawn face ",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "28": {
+    "inputs": {
+      "filename": "negative_conditioning_preparation",
+      "conditioning": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "StarConditioningSaver",
+    "_meta": {
+      "title": "**negative_conditioning"
+    }
+  },
+  "29": {
+    "inputs": {
+      "tensor": [
+        "31",
+        1
+      ]
+    },
+    "class_type": "easy showTensorShape",
+    "_meta": {
+      "title": "Show Tensor Shape"
+    }
+  },
+  "30": {
+    "inputs": {
+      "filename_prefix": "latents/preparation",
+      "samples": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "SaveLatentLTXV",
+    "_meta": {
+      "title": "**latent_out"
+    }
+  },
+  "31": {
+    "inputs": {
+      "frame_rate": 25,
+      "positive": [
+        "25",
+        0
+      ],
+      "negative": [
+        "28",
+        0
+      ]
+    },
+    "class_type": "LTXVConditioning",
+    "_meta": {
+      "title": "LTXVConditioning"
+    }
+  }
+}

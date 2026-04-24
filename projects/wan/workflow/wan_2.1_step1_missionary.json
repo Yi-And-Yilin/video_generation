@@ -40,7 +40,7 @@
   },
   "12": {
     "inputs": {
-      "conditioning_file": "load_pos_conditioning.pt"
+      "conditioning_file": "**load_pos_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
@@ -49,7 +49,7 @@
   },
   "13": {
     "inputs": {
-      "conditioning_file": "load_neg_conditioning.pt"
+      "conditioning_file": "**load_neg_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {

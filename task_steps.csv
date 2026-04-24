@@ -1,13 +1,14 @@
 task_name,workflow_name,save_video,category
-wan2.2,audio_nsfw,yes,no
+wan2.2,audio_generation,yes,no
 wan2.2,wan_2.2_step0,no,no
 wan2.2,wan_2.2_step1,no,no
 wan2.2,wan_2.2_step2,no,no
 wan2.2,wan_2.2_step3,yes,no
 wan2.2,FlashSVR,yes,no
-wan2.1,audio_nsfw,yes,no
+wan2.1,audio_generation,yes,no
 wan2.1,wan_2.2_step0,no,no
 wan2.1,wan_2.1_step1,no,yes
 wan2.1,wan_2.1_step2,yes,no
 wan2.1,FlashSVR,yes,no
-custom,audio_nsfw,yes,no
+wan_image,wan_image,yes,no
+custom,audio_generation,yes,no

@@ -12,7 +12,7 @@
   },
   "2": {
     "inputs": {
-      "text": "A young girl having vaginal sex with a man. They are kissing. vaginal penetration. They are having cowgirl position sex. female on top.the female is aggressively bouncing on his cock. She slides his cock deep inside her pussy with each bounce. deep penetration. her breast and ass are bouncing. curling her toes. Her jaw might be tight, teeth clenched, and her mouth pulled back or open in a silent scream. Her thighs are twitching.Sweat dripped down. \n\n",
+      "text": "**prompt**",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -26,12 +26,12 @@
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "**prompt"
+      "title": "Positive Prompt"
     }
   },
   "3": {
     "inputs": {
-      "filename": "positive_conditioning_2",
+      "filename": "**save_pos_conditioning**",
       "conditioning": [
         "2",
         0
@@ -39,7 +39,7 @@
     },
     "class_type": "StarConditioningSaver",
     "_meta": {
-      "title": "**positive_conditioning"
+      "title": "Save Positive Conditioning"
     }
   },
   "4": {
@@ -57,7 +57,7 @@
   },
   "5": {
     "inputs": {
-      "text": "pc game, console game, video game,  ugly",
+      "text": "**negative_prompt**",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -71,12 +71,12 @@
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "Negative Prompt"
     }
   },
   "6": {
     "inputs": {
-      "filename": "negative_conditioning",
+      "filename": "**save_neg_conditioning**",
       "conditioning": [
         "5",
         0
@@ -84,7 +84,7 @@
     },
     "class_type": "StarConditioningSaver",
     "_meta": {
-      "title": "**negative_conditioning"
+      "title": "Save Negative Conditioning"
     }
   },
   "7": {

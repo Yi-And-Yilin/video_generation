@@ -1,0 +1,15 @@
+[
+    {
+        "image_path": "D:\\ComfyUI_windows_portable\\ComfyUI\\input\\ComfyUI_00513_.png",
+        "filename": "ComfyUI_00513_.png",
+        "filename_base": "ComfyUI_00513_",
+        "video_prompt": "\u5973\u751f\u5fae\u7b11\u7740",
+        "audio_prompt": "",
+        "seconds": "3",
+        "width": "1280",
+        "category": "NA",
+        "upscale": false,
+        "audio": false,
+        "batch": "4"
+    }
+]

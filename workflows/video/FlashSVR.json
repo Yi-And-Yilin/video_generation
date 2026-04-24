@@ -1,0 +1,151 @@
+{
+  "1": {
+    "inputs": {
+      "dit": "diffusion_pytorch_model_streaming_dmd.safetensors",
+      "proj_pt": "LQ_proj_in.ckpt",
+      "emb_pt": "posi_prompt.pth",
+      "vae": "native_wan_2.1_vae.safetensors",
+      "tcd_encoder": "TCDecoder.ckpt",
+      "tiny_long": false
+    },
+    "class_type": "FlashVSR_SM_Model",
+    "_meta": {
+      "title": "FlashVSR_SM_Model"
+    }
+  },
+  "6": {
+    "inputs": {
+      "width": [
+        "13",
+        0
+      ],
+      "height": [
+        "16",
+        0
+      ],
+      "seed": 440549951,
+      "scale": 1,
+      "kv_ratio": 3.5,
+      "local_range": 11,
+      "steps": 1,
+      "cfg": 1,
+      "sparse_ratio": 2,
+      "full_tiled": true,
+      "color_fix": true,
+      "fix_method": "wavelet",
+      "split_num": 41,
+      "model": [
+        "1",
+        0
+      ],
+      "image": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "FlashVSR_SM_KSampler",
+    "_meta": {
+      "title": "FlashVSR_SM_KSampler"
+    }
+  },
+  "13": {
+    "inputs": {
+      "value": "a*b",
+      "a": [
+        "18",
+        3
+      ],
+      "b": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "🔧 Simple Math"
+    }
+  },
+  "15": {
+    "inputs": {
+      "value": 1.5
+    },
+    "class_type": "FloatConstant",
+    "_meta": {
+      "title": "Float Constant"
+    }
+  },
+  "16": {
+    "inputs": {
+      "value": "a*b",
+      "a": [
+        "18",
+        4
+      ],
+      "b": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "SimpleMath+",
+    "_meta": {
+      "title": "🔧 Simple Math"
+    }
+  },
+  "18": {
+    "inputs": {
+      "video_info": [
+        "20",
+        3
+      ]
+    },
+    "class_type": "VHS_VideoInfo",
+    "_meta": {
+      "title": "Video Info 🎥🅥🅗🅢"
+    }
+  },
+  "19": {
+    "inputs": {
+      "frame_rate": [
+        "18",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "video/**job_id_out**",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "6",
+        0
+      ],
+      "audio": [
+        "20",
+        2
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "20": {
+    "inputs": {
+      "video": "ComfyUI/output/video/**job_id_in**.mp4",
+      "force_rate": 0,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "class_type": "VHS_LoadVideoPath",
+    "_meta": {
+      "title": "Load Video (Path) 🎥🅥🅗🅢"
+    }
+  }
+}

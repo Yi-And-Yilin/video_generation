@@ -1,0 +1,86 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "answer",
+      "description": "Design character profiles for a movie scene based on User Requirements.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "male": {
+            "type": "object",
+            "properties": {
+              "age": {
+                "type": "string",
+                "description": "Age group. One word: Toddler, Child, Teenager, Young, Adult, Middle-age, Old"
+              },
+              "nationality": {
+                "type": "string",
+                "description": "Nationality. One word if possible."
+              },
+              "height": {
+                "type": "string",
+                "description": "Height. One word: Short, Medium, Tall"
+              },
+              "body_shape": {
+                "type": "string",
+                "description": "Body shape for male. One word: Slim, Athletic, Average, Stocky, Muscular, Heavy"
+              },
+              "penis": {
+                "type": "string",
+                "description": "design the look of penis attribute, for example, veiny penis, small penis, big penis, medium size penis"
+              },
+              "personality": {
+                "type": "string",
+                "description": "Personality trait. One word if possible."
+              }
+            },
+            "required": ["age", "nationality", "height", "body_shape", "hair_style", "personality"],
+            "additionalProperties": false
+          },
+          "female": {
+            "type": "object",
+            "properties": {
+              "age": {
+                "type": "string",
+                "description": "Age group. One word: Toddler, Child, Teenager, Young, Adult, Middle-age, Old"
+              },
+              "nationality": {
+                "type": "string",
+                "description": "Nationality. One word if possible."
+              },
+              "height": {
+                "type": "string",
+                "description": "Height. One word: Short, Medium, Tall"
+              },
+              "body_shape": {
+                "type": "string",
+                "description": "Body shape for female. One word: Thin, Slender, Medium, Curvy, Voluptuous, Chubby"
+              },
+              "hair_style": {
+                "type": "string",
+                "description": "Hair style. One of: Sleek low bun, Double buns, Bob cut, Long Bob, Pixie cut, Shag cut, Layered cut, Straight long hair, Wavy hair, Curly hair, French braid, Dutch braid, Fishtail braid, Side-swept bangs, Blunt bangs, Curtain bangs"
+              },
+			  "nipples": {
+                "type": "string",
+                "description": "design the look of the nipple and areola, for example, pink nipples, large areola, erected nipples, dark areola, etc"
+              },
+			  "pussy": {
+                "type": "string",
+                "description": "design the look of the pussy and labia, for example, pink labia, hairy pussy, hairless pussy, wet pussy, etc"
+              },
+              "personality": {
+                "type": "string",
+                "description": "Personality trait. One word if possible."
+              }
+            },
+            "required": ["age", "nationality", "height", "body_shape", "hair_style", "personality"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["male", "female"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

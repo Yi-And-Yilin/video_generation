@@ -1,0 +1,121 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_adult_scene",
+      "description": "Generate a detailed multi-scene adult images/script description in explicit scenes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "female_character": {
+            "type": "object",
+            "properties": {
+              "age": {
+                "type": "number",
+                "description": "Age of the female character"
+              },
+              "nationality": {
+                "type": "string",
+                "description": "Country name (e.g. Japanese, Brazilian, Russian)"
+              },
+              "body_shape": {
+                "type": "string",
+                "description": "Body shape description in one or a few words (e.g. slim, curvy, athletic)"
+              },
+              "hair_style": {
+                "type": "string",
+                "description": "Hair style name (e.g. long straight black hair, short blonde bob)"
+              },
+              "wearing": {
+                "type": "string",
+                "description": "Detailed description of what she is wearing. Can be fully clothed, partially clothed, or completely naked, with or without accessories."
+              }
+            },
+            "required": [
+              "age",
+              "nationality",
+              "body_shape",
+              "hair_style",
+              "wearing"
+            ]
+          },
+		  "male_character": {
+            "type": "object",
+			"description": "optional, only have this part if there is a male in the plot",
+            "properties": {
+              "age": {
+                "type": "number",
+                "description": "Age of the female character"
+              },
+              "nationality": {
+                "type": "string",
+                "description": "Country name (e.g. Japanese, Brazilian, Russian)"
+              },
+              "wearing": {
+                "type": "string",
+                "description": "Detailed description of what she is wearing. Can be fully clothed, partially clothed, or completely naked, with or without accessories."
+              }
+            },
+            "required": [
+              "age",
+              "nationality"
+            ]
+          },
+          "main_location": {
+            "type": "string",
+            "description": "Short but clear location name (e.g. luxury bedroom, beach villa, dark alley)"
+          },
+          "lighting": {
+            "type": "string",
+            "description": "Short lighting description (e.g. soft warm candlelight, neon nightclub lights, bright daylight)"
+          },
+          "art_type": {
+            "type": "string",
+            "description": "Short art style description (e.g. realistic, anime, cinematic, photorealistic)"
+          },
+          "scenes_count": {
+            "type": "number",
+            "description": "Number of scenes to generate"
+          },
+          "scenes": {
+            "type": "array",
+            "description": "List of scenes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sex_loras": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of SD sex loras applying to the currect Comfyui workflow (e.g. ['blowjob', 'doggy_style']). put 'None' if it's not a explicit sex scene. Leave it none if it's just a normal scence without sex action"
+                },
+                "first_frame_image_prompt": {
+                  "type": "string",
+                  "description": "Detailed SD-style image prompt. Must be completely self-contained: include full location description, full character appearance, exact clothing/nudity state, lighting, camera angle, composition, and mood. Do not reference any previous scenes."
+                },
+                "scene_plot": {
+                  "type": "string",
+                  "description": "a short description of the plot of current scence"
+                }
+              },
+              "required": [
+				"sex_loras",
+                "first_frame_image_prompt",
+                "scene_plot"
+              ]
+            }
+          }
+        },
+        "required": [
+          "female_character",
+          "main_location",
+          "lighting",
+          "art_type",
+          "scenes_count",
+          "scenes"
+        ]
+      }
+    }
+  }
+]

@@ -1,6 +1,6 @@
 import re
 
-file_path = "nsfw_ui.py"
+file_path = "main_ui.py"
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
 

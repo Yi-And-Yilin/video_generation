@@ -2,153 +2,23 @@ import requests
 import json
 import uuid
 import random
+import os
+import sys
+
+# Ensure projects/ltx is in path for workflow_generator
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "ltx"))
+from workflow_generator import generate_api_workflow
 
 def comfyui(prompt: str) -> str:
-    workflow = r'''
-    {
-      "3": {
-        "inputs": {
-          "seed": {seed},
-          "steps": 20,
-          "cfg": 6.5,
-          "sampler_name": "euler",
-          "scheduler": "exponential",
-          "denoise": 1,
-          "model": [
-            "4",
-            0
-          ],
-          "positive": [
-            "30",
-            0
-          ],
-          "negative": [
-            "33",
-            0
-          ],
-          "latent_image": [
-            "5",
-            0
-          ]
-        },
-        "class_type": "KSampler",
-        "_meta": {
-          "title": "KSampler"
-        }
-      },
-      "4": {
-        "inputs": {
-          "ckpt_name": "xl\\meichiILIghtMIXV1_meichiILUstMIXV1.safetensors"
-        },
-        "class_type": "CheckpointLoaderSimple",
-        "_meta": {
-          "title": "Load Checkpoint"
-        }
-      },
-      "5": {
-        "inputs": {
-          "width": 1024,
-          "height": 1024,
-          "batch_size": 1
-        },
-        "class_type": "EmptyLatentImage",
-        "_meta": {
-          "title": "Empty Latent Image"
-        }
-      },
-      "8": {
-        "inputs": {
-          "samples": [
-            "3",
-            0
-          ],
-          "vae": [
-            "4",
-            2
-          ]
-        },
-        "class_type": "VAEDecode",
-        "_meta": {
-          "title": "VAE Decode"
-        }
-      },
-      "28": {
-        "inputs": {
-          "filename_prefix": "ComfyUI",
-          "images": [
-            "8",
-            0
-          ]
-        },
-        "class_type": "SaveImage",
-        "_meta": {
-          "title": "Save Image"
-        }
-      },
-      "30": {
-        "inputs": {
-          "width": 4096,
-          "height": 4096,
-          "crop_w": 0,
-          "crop_h": 0,
-          "target_width": 4096,
-          "target_height": 4096,
-          "text_g": "{pormpt}",
-          "text_l": "{pormpt}",
-          "speak_and_recognation": {
-            "__value__": [
-              false,
-              true
-            ]
-          },
-          "clip": [
-            "4",
-            1
-          ]
-        },
-        "class_type": "CLIPTextEncodeSDXL",
-        "_meta": {
-          "title": "CLIPTextEncodeSDXL"
-        }
-      },
-      "33": {
-        "inputs": {
-          "width": 4096,
-          "height": 4096,
-          "crop_w": 0,
-          "crop_h": 0,
-          "target_width": 4096,
-          "target_height": 4096,
-          "text_g": "blurry, animation, 3d render, illustration, toy, puppet, claymation, low quality, flag, nasa, mission patch",
-          "text_l": "blurry, animation, 3d render, illustration, toy, puppet, claymation, low quality, flag, nasa, mission patch",
-          "speak_and_recognation": {
-            "__value__": [
-              false,
-              true
-            ]
-          },
-          "clip": [
-            "4",
-            1
-          ]
-        },
-        "class_type": "CLIPTextEncodeSDXL",
-        "_meta": {
-          "title": "CLIPTextEncodeSDXL"
-        }
-      }
-    }
-    '''
-    
-    
-    # Replace the placeholder in the JSON string safely
-    workflow_filled = workflow.replace('{pormpt}', prompt)
-    workflow_filled = workflow_filled.replace('{seed}', str(random.randint(10**15, (10**16) - 1)))
-    
-    # Load to dict
-    workflow_dict = json.loads(workflow_filled)
-    
-    
+    # Use the unified WAN-style image generation process
+    workflow_dict = generate_api_workflow(
+        project="wan",
+        type="image",
+        template="wan_image",
+        prompt=prompt,
+        width=1024,
+        height=1024
+    )
     
     # Generate unique prompt_id
     prompt_id = str(uuid.uuid4())
@@ -159,17 +29,21 @@ def comfyui(prompt: str) -> str:
         "prompt_id": prompt_id
     }
     
-    # Send to ComfyUI
-    response = requests.post(
-        "http://192.168.4.63:8188/prompt",
-        json=payload
-    )
-    
-    # Check result
-    if response.ok:
-        print("Task queued successfully.")
-        # print("Response:", response.json())
+    # Send to ComfyUI (Using standard URL from project)
+    comfyui_url = "http://192.168.4.22:8188/prompt"
+    try:
+        response = requests.post(comfyui_url, json=payload, timeout=60)
+        if response.ok:
+            print("Task queued successfully.")
+            return prompt_id
+        else:
+            print(f"Failed to queue task. Status: {response.status_code}")
+    except Exception as e:
+        print(f"Error connecting to ComfyUI: {e}")
+    return None
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        comfyui(" ".join(sys.argv[1:]))
     else:
-        print("Failed to queue task.")
-        print("Status Code:", response.status_code)
-        print("Response:", response.text)
+        comfyui("A beautiful cinematic shot of a sunset over the mountains")

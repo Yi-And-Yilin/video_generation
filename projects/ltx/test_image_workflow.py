@@ -96,7 +96,7 @@ def send_workflow_to_comfyui(workflow: dict, work_id: str) -> str:
         return None
 
 
-def run_test(task_filename: str = "general - image_20260328_175631.json"):
+def run_test(task_filename: str = "multiple-scene-images_20260328_175631.json"):
     """Run the complete test."""
     print("=" * 60)
     print("IMAGE WORKFLOW UNIT TEST")
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Test Image Workflow Generation")
-    parser.add_argument("--task", type=str, default="general - image_20260328_175631.json",
+    parser.add_argument("--task", type=str, default="multiple-scene-images_20260328_175631.json",
                        help="Task JSON filename")
     
     args = parser.parse_args()

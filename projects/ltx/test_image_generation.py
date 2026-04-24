@@ -1,5 +1,5 @@
 """
-Unit tests for image generation module (nsfw_ui.py)
+Unit tests for image generation module (main_ui.py)
 Tests for:
 - LoRA lookup CSV parsing
 - Workflow JSON generation
@@ -58,7 +58,7 @@ class TestWorkflowGeneration(unittest.TestCase):
     @patch("requests.post")
     def test_send_workflow_success(self, mock_post):
         """Test successful workflow submission to ComfyUI."""
-        from nsfw_ui import COMFYUI_URL, NSFWApp
+        from main_ui import COMFYUI_URL, VideoGenerationApp
 
         # Setup mock response
         mock_response = MagicMock()
@@ -82,7 +82,7 @@ class TestWorkflowGeneration(unittest.TestCase):
         workflow_str = json.dumps(test_workflow)
 
         # Call send_workflow_to_comfyui
-        prompt_id = NSFWApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
 
         # Verify response
         self.assertIsNotNone(prompt_id)
@@ -95,12 +95,12 @@ class TestWorkflowGeneration(unittest.TestCase):
         """Test workflow timeout error handling."""
         mock_post.side_effect = requests.exceptions.Timeout()
 
-        from nsfw_ui import NSFWApp
+        from main_ui import VideoGenerationApp
 
         test_workflow = {"3": [], "prompt_0": []}
         workflow_str = json.dumps(test_workflow)
 
-        prompt_id = NSFWApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
 
         self.assertIsNone(prompt_id)
 
@@ -109,12 +109,12 @@ class TestWorkflowGeneration(unittest.TestCase):
         """Test connection error handling."""
         mock_post.side_effect = requests.exceptions.ConnectionError()
 
-        from nsfw_ui import NSFWApp
+        from main_ui import VideoGenerationApp
 
         test_workflow = {"3": [], "prompt_0": []}
         workflow_str = json.dumps(test_workflow)
 
-        prompt_id = NSFWApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
 
         self.assertIsNone(prompt_id)
 
@@ -127,12 +127,12 @@ class TestWorkflowGeneration(unittest.TestCase):
         mock_response.text = "Internal Server Error"
         mock_post.return_value = mock_response
 
-        from nsfw_ui import NSFWApp
+        from main_ui import VideoGenerationApp
 
         test_workflow = {"3": [], "prompt_0": []}
         workflow_str = json.dumps(test_workflow)
 
-        prompt_id = NSFWApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
 
         self.assertIsNone(prompt_id)
 
@@ -188,7 +188,7 @@ class TestWorkflowJsonSerialization(unittest.TestCase):
         mock_response.text = '{"prompt_id": "test"}'
         mock_post.return_value = mock_response
 
-        from nsfw_ui import NSFWApp
+        from main_ui import VideoGenerationApp
 
         # workflow is a dict returned from generate_api_workflow
         workflow_dict = {
@@ -198,7 +198,7 @@ class TestWorkflowJsonSerialization(unittest.TestCase):
 
         # This is what the fixed code does
         workflow_str = json.dumps(workflow_dict)
-        prompt_id = NSFWApp.send_workflow_to_comfyui(workflow_str, "test-id")
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-id")
 
         self.assertIsNotNone(prompt_id)
 

@@ -1,0 +1,122 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "answer",
+      "description": "Design locations in a movie scene and the character's outfits based on User Requirements.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The primary location or setting of the scene."
+          },
+          "location_major_elements": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Key objects or architectural features in the scene."
+          },
+          "time": {
+            "type": "string",
+            "description": "Time of day (e.g., morning, afternoon, night, dawn, dusk)."
+          },
+          "lying_surfaces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lying_surface": { "type": "string", "description": "A surface that the character can lie on." },
+                "objects_on_it": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Objects present on that lying surface."
+                }
+              },
+              "required": ["lying_surface", "objects_on_it"],
+              "additionalProperties": false
+            },
+            "description": "Surfaces that the character can lie on, with objects on them."
+          },
+          "sitting_surfaces": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Surfaces that the character can sit on."
+          },
+          "virtical_surfaces": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Vertical surfaces (walls, panels, etc.) in the scene."
+          },
+          "lighting": {
+            "type": "string",
+            "description": "Description of lighting conditions."
+          },
+          "female_character": {
+            "type": "object",
+            "properties": {
+              "top": { "type": "string", "description": "Upper body garment." },
+              "bottom": { "type": "string", "description": "Lower body garment." },
+              "shoes": { "type": "string", "description": "Footwear." },
+              "legs": { "type": "string", "description": "Legwear such as socks, stockings, or tights." },
+              "bra": { "type": "string", "description": "Brassiere type or color." },
+              "panties": { "type": "string", "description": "Underwear type or color." },
+              "finger_nail": { "type": "string", "description": "Fingernail polish or decoration." },
+              "toe_nails": { "type": "string", "description": "Toenail polish or decoration." },
+              "face": { "type": "string", "description": "Facial accessories like glasses or masks." },
+              "makeup": { "type": "string", "description": "Makeup style or products." },
+              "accessories": {
+                "type": "object",
+                "properties": {
+                  "hair": { "type": "string", "description": "Hair accessory." },
+                  "finger": { "type": "string", "description": "Ring or finger accessory." },
+                  "wrist": { "type": "string", "description": "Wrist accessory like bracelet or watch." },
+                  "neck": { "type": "string", "description": "Necklace or neck accessory." },
+                  "waist": { "type": "string", "description": "Belt or waist accessory." },
+                  "ankle": { "type": "string", "description": "Ankle accessory." },
+                  "belly": { "type": "string", "description": "Belly button ring or accessory." },
+                  "tongue": { "type": "string", "description": "Tongue piercing or accessory." },
+                  "thigh": { "type": "string", "description": "Thigh accessory like garter." },
+                  "ear": { "type": "string", "description": "Earrings or ear accessory." },
+                  "face": { "type": "string", "description": "Face accessory (e.g., glasses, mask)." }
+                },
+                "additionalProperties": false,
+                "description": "Optional accessories on different body parts."
+              }
+            },
+            "required": ["top", "bottom", "shoes", "legs", "bra", "panties", "accessories"],
+            "additionalProperties": false,
+            "description": "The female character's outfit and details."
+          },
+          "male_character": {
+            "type": "object",
+            "properties": {
+              "top": { "type": "string", "description": "Upper body garment." },
+              "bottom": { "type": "string", "description": "Lower body garment." },
+              "shoes": { "type": "string", "description": "Footwear." },
+              "legs": { "type": "string", "description": "Legwear such as socks." },
+              "accessories": {
+                "type": "object",
+                "properties": {
+                  "hair": { "type": "string", "description": "Hair accessory or style." },
+                  "finger": { "type": "string", "description": "Ring or finger accessory." },
+                  "wrist": { "type": "string", "description": "Wrist accessory like bracelet or watch." },
+                  "neck": { "type": "string", "description": "Necklace or tie." },
+                  "waist": { "type": "string", "description": "Belt or waist accessory." },
+                  "ear": { "type": "string", "description": "Earrings or ear accessory." },
+                  "face": { "type": "string", "description": "Face accessory (e.g., glasses, mask)." }
+                },
+                "additionalProperties": false,
+                "description": "Optional accessories for male character."
+              }
+            },
+            "required": ["top", "bottom", "shoes", "legs", "accessories"],
+            "additionalProperties": false,
+            "description": "The male character's outfit and details."
+          }
+        },
+        "required": ["location", "location_major_elements", "time", "lying_surfaces", "sitting_surface", "virtical_surface", "lighting", "female_character", "male_character"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

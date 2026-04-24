@@ -10,11 +10,11 @@
   },
   "2": {
     "inputs": {
-      "latent": "video_00001_.latent"
+      "latent": "**video_latent**"
     },
     "class_type": "LoadLatent",
     "_meta": {
-      "title": "**video_latent"
+      "title": "Load Latent"
     }
   },
   "3": {
@@ -69,7 +69,7 @@
         0
       ],
       "loop_count": 0,
-      "filename_prefix": "video",
+      "filename_prefix": "**save_video**",
       "format": "video/h264-mp4",
       "pix_fmt": "yuv420p",
       "crf": 19,
@@ -93,20 +93,20 @@
   },
   "13": {
     "inputs": {
-      "latent": "audio_00001_.latent"
+      "latent": "**audio_latent**"
     },
     "class_type": "LoadLatent",
     "_meta": {
-      "title": "**audio_latent"
+      "title": "Load Latent Audio"
     }
   },
   "16": {
     "inputs": {
-      "Number": "24"
+      "Number": "**fps**"
     },
     "class_type": "Float",
     "_meta": {
-      "title": "**fps"
+      "title": "FPS"
     }
   }
 }

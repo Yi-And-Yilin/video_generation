@@ -1,0 +1,75 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_sequential_image_story_plan",
+      "description": "Creates a structured plan for a sequential storytelling series of images with character specs, location, and per-scene plot.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "female_character_name": { "type": "string", "description": "Full name" },
+          "female_character_age": { "type": "string", "description": "Age, e.g. '32 years old'" },
+          "female_character_nationality": { "type": "string", "description": "Nationality" },
+          "female_character_body_shape": { "type": "string", "description": "Body description" },
+          "female_character_hair": { "type": "string", "description": "Hair description" },
+          "female_character_face": { "type": "string", "description": "Facial features" },
+          "female_character_breasts": { "type": "string", "description": "Breast description" },
+          "female_character_waist": { "type": "string", "description": "Waist description" },
+          "female_character_hips": { "type": "string", "description": "Hip description" },
+          "female_character_stockings": { "type": "string", "description": "Stocking type or none" },
+          "female_character_shoes": { "type": "string", "description": "Shoes or none" },
+          "female_character_upper_body_wearing": { "type": "string", "description": "Upper body clothing" },
+          "female_character_lower_body_wearing": { "type": "string", "description": "Lower body clothing" },
+          "female_character_breasts_show_with_clothes_on": { "type": "boolean", "description": "Whether breasts visible with clothes" },
+          "female_character_bra": { "type": "string", "description": "Bra description or none" },
+          "female_character_toes": { "type": "string", "description": "Toe description or none" },
+          "female_character_choker": { "type": "string", "description": "Choker or none" },
+          "female_character_pearl": { "type": "string", "description": "Pearl jewelry or none" },
+          "female_character_ring": { "type": "string", "description": "Ring or none" },
+          "female_character_earrings": { "type": "string", "description": "Earrings or none" },
+          "female_character_nose_ring": { "type": "string", "description": "Nose ring or none" },
+          "female_character_belly_stud": { "type": "string", "description": "Belly stud or none" },
+          "female_character_pussy_stud": { "type": "string", "description": "Pussy stud or none" },
+          "female_character_tattoo": { "type": "string", "description": "Tattoo or none" },
+          "female_character_hair_accessories": { "type": "string", "description": "Hair accessories or none" },
+          "female_character_waist_accessories": { "type": "string", "description": "Waist accessories or none" },
+          "female_character_ankle_accessories": { "type": "string", "description": "Ankle accessories or none" },
+          "male_character_name": { "type": "string", "description": "Full name" },
+          "male_character_age": { "type": "string", "description": "Age, e.g. '18 years old'" },
+          "male_character_nationality": { "type": "string", "description": "Nationality" },
+          "male_character_hair": { "type": "string", "description": "Hair description" },
+          "male_character_shoes": { "type": "string", "description": "Shoes or none" },
+          "male_character_upper_body_wearing": { "type": "string", "description": "Upper body clothing" },
+          "male_character_lower_body_wearing": { "type": "string", "description": "Lower body clothing" },
+          "main_location": { "type": "string", "description": "Location name" },
+          "lighting": { "type": "string", "description": "Lighting description" },
+          "art_type": { "type": "string", "description": "Art style" },
+          "scenes_count": { "type": "integer", "description": "Total number of scenes" },
+          "scenes": {
+            "type": "array",
+            "description": "List of scenes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": { "type": "integer", "description": "Scene number" },
+                "plot": { "type": "string", "description": "Plot description" },
+				"is_it_an_explicit_sex_scene": { "type": "boolean", "description": "only true when there is sex act in currect scenes" }
+              },
+              "required": ["index", "plot"]
+            }
+          }
+        },
+        "required": [
+          "female_character_name", "female_character_age", "female_character_nationality", "female_character_body_shape", "female_character_hair", "female_character_face",
+          "female_character_breasts", "female_character_waist", "female_character_hips", "female_character_stockings", "female_character_shoes",
+          "female_character_upper_body_wearing", "female_character_lower_body_wearing", "female_character_breasts_show_with_clothes_on",
+          "female_character_bra", "female_character_toes", "female_character_choker", "female_character_pearl", "female_character_ring",
+          "female_character_earrings", "female_character_nose_ring", "female_character_belly_stud", "female_character_pussy_stud",
+          "female_character_tattoo", "female_character_hair_accessories", "female_character_waist_accessories", "female_character_ankle_accessories",
+          "male_character_name", "male_character_age", "male_character_nationality", "male_character_hair",
+          "main_location", "lighting", "art_type", "scenes_count", "scenes"
+        ]
+      }
+    }
+  }
+]

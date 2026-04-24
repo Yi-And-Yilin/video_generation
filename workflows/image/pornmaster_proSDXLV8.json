@@ -1,0 +1,228 @@
+{
+  "4": {
+    "inputs": {
+      "ckpt_name": "pornmasterPro_noobV6.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "**checkpoint"
+    }
+  },
+  "5": {
+    "inputs": {
+      "width": [
+        "97",
+        0
+      ],
+      "height": [
+        "98",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": [
+        "202",
+        0
+      ],
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "201",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": [
+        "99",
+        0
+      ],
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      },
+      "clip": [
+        "201",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "10": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 324895640619141,
+      "steps": 25,
+      "cfg": 5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "start_at_step": 0,
+      "end_at_step": 30,
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "201",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "KSampler (Advanced) - BASE"
+    }
+  },
+  "17": {
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "59": {
+    "inputs": {
+      "lora_name": "xl\\slider\\amateur_style_v1_pony.safetensors",
+      "strength_model": 2,
+      "model": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "79": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "**output"
+    }
+  },
+  "91": {
+    "inputs": {
+      "lora_name": "xl\\add-detail.safetensors",
+      "strength_model": 0.6,
+      "strength_clip": 0.6,
+      "model": [
+        "59",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "97": {
+    "inputs": {
+      "Number": "1024"
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "**width"
+    }
+  },
+  "98": {
+    "inputs": {
+      "Number": "1024"
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "**height"
+    }
+  },
+  "99": {
+    "inputs": {
+      "string": "ugly, deformed, bad quality, low quality"
+    },
+    "class_type": "StringConstant",
+    "_meta": {
+      "title": "negative_prompt"
+    }
+  },
+  "201": {
+    "inputs": {
+      "lora_name": "xl\\mating-press-from-side-v2-illustriousxl-lora-nochekaiser.safetensors",
+      "strength_model": 0.7,
+      "strength_clip": 0.7,
+      "model": [
+        "91",
+        0
+      ],
+      "clip": [
+        "91",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "**lora"
+    }
+  },
+  "202": {
+    "inputs": {
+      "text": "postion prompt",
+      "speak_and_recognation": {
+        "__value__": [
+          false,
+          true
+        ]
+      }
+    },
+    "class_type": "JjkText",
+    "_meta": {
+      "title": "**prompt"
+    }
+  }
+}

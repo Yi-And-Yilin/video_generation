@@ -1,7 +1,7 @@
 {
   "289": {
     "inputs": {
-      "String": "",
+      "String": "**prompt**",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -11,34 +11,34 @@
     },
     "class_type": "String",
     "_meta": {
-      "title": "**prompt"
+      "title": "Prompt"
     }
   },
   "290": {
     "inputs": {
-      "Number": ""
+      "Number": "**width**"
     },
     "class_type": "Int",
     "_meta": {
-      "title": "**width"
+      "title": "Width"
     }
   },
   "291": {
     "inputs": {
-      "Number": ""
+      "Number": "**height**"
     },
     "class_type": "Int",
     "_meta": {
-      "title": "**height"
+      "title": "Height"
     }
   },
   "294": {
     "inputs": {
-      "Number": ""
+      "Number": "**length**"
     },
     "class_type": "Int",
     "_meta": {
-      "title": "**length"
+      "title": "Length"
     }
   },
   "296": {
@@ -47,12 +47,12 @@
     },
     "class_type": "PrimitiveBoolean",
     "_meta": {
-      "title": "**disable_i2v"
+      "title": "Disable I2V"
     }
   },
   "298": {
     "inputs": {
-      "String": "",
+      "String": "**work_id**",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -62,7 +62,7 @@
     },
     "class_type": "String",
     "_meta": {
-      "title": "**work_id"
+      "title": "Work ID"
     }
   },
   "299": {
@@ -89,16 +89,16 @@
   },
   "302": {
     "inputs": {
-      "image": "032pn6f1.png"
+      "image": "**image**"
     },
     "class_type": "LoadImage",
     "_meta": {
-      "title": "**image"
+      "title": "Load Image"
     }
   },
   "303": {
     "inputs": {
-      "filename_prefix": "latents/video",
+      "filename_prefix": "latents/video_**work_id**",
       "samples": [
         "305",
         0
@@ -106,12 +106,12 @@
     },
     "class_type": "SaveLatent",
     "_meta": {
-      "title": "**vidoe_latent"
+      "title": "Save Video Latent"
     }
   },
   "304": {
     "inputs": {
-      "filename_prefix": "latents/audio",
+      "filename_prefix": "latents/audio_**work_id**",
       "samples": [
         "305",
         1
@@ -119,7 +119,7 @@
     },
     "class_type": "SaveLatent",
     "_meta": {
-      "title": "**audio_latent"
+      "title": "Save Audio Latent"
     }
   },
   "305": {
@@ -136,25 +136,25 @@
   },
   "306": {
     "inputs": {
-      "conditioning_file": "positive_conditioning.pt"
+      "conditioning_file": "**load_pos_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
-      "title": "**positive_conditioning_load"
+      "title": "Load Positive Conditioning"
     }
   },
   "307": {
     "inputs": {
-      "conditioning_file": "negative_conditioning.pt"
+      "conditioning_file": "**load_neg_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
-      "title": "**negative_conditioning_load"
+      "title": "Load Negative Conditioning"
     }
   },
   "267:216": {
     "inputs": {
-      "noise_seed": 42
+      "noise_seed": "**random_number**"
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -163,7 +163,7 @@
   },
   "267:237": {
     "inputs": {
-      "noise_seed": 915506171954344
+      "noise_seed": "**random_number**"
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -199,7 +199,7 @@
   },
   "267:260": {
     "inputs": {
-      "value": 24
+      "value": "**fps**"
     },
     "class_type": "PrimitiveInt",
     "_meta": {
@@ -349,7 +349,7 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "Load LoRA"
+      "title": "Load LoRA Distilled"
     }
   },
   "267:256": {
@@ -456,8 +456,8 @@
   },
   "267:282": {
     "inputs": {
-      "lora_name": "ltx\\nsfw\\cowgirl_pov_backshot.safetensors",
-      "strength_model": 0.5,
+      "lora_name": "**lora1_name**",
+      "strength_model": "**lora1_strength**",
       "model": [
         "267:232",
         0
@@ -465,7 +465,63 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "**lora"
+      "title": "LoRA 1"
+    }
+  },
+  "267:283": {
+    "inputs": {
+      "lora_name": "**lora2_name**",
+      "strength_model": "**lora2_strength**",
+      "model": [
+        "267:282",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 2"
+    }
+  },
+  "267:284": {
+    "inputs": {
+      "lora_name": "**lora3_name**",
+      "strength_model": "**lora3_strength**",
+      "model": [
+        "267:283",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 3"
+    }
+  },
+  "267:285": {
+    "inputs": {
+      "lora_name": "**lora4_name**",
+      "strength_model": "**lora4_strength**",
+      "model": [
+        "267:284",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 4"
+    }
+  },
+  "267:286": {
+    "inputs": {
+      "lora_name": "**lora5_name**",
+      "strength_model": "**lora5_strength**",
+      "model": [
+        "267:285",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 5"
     }
   },
   "267:235": {
@@ -507,7 +563,7 @@
       "sage_attention": "auto",
       "allow_compile": false,
       "model": [
-        "267:282",
+        "267:286",
         0
       ]
     },

@@ -1,0 +1,109 @@
+{
+  "1": {
+    "inputs": {
+      "av_latent": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "LTXVSeparateAVLatent",
+    "_meta": {
+      "title": "LTXVSeparateAVLatent"
+    }
+  },
+  "2": {
+    "inputs": {
+      "tile_size": 768,
+      "overlap": 64,
+      "temporal_size": 4096,
+      "temporal_overlap": 4,
+      "samples": [
+        "1",
+        0
+      ],
+      "vae": [
+        "7",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeTiled",
+    "_meta": {
+      "title": "VAE Decode (Tiled)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "samples": [
+        "1",
+        1
+      ],
+      "audio_vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "LTXVAudioVAEDecode",
+    "_meta": {
+      "title": "LTXV Audio VAE Decode"
+    }
+  },
+  "4": {
+    "inputs": {
+      "fps": 25,
+      "images": [
+        "2",
+        0
+      ],
+      "audio": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "5": {
+    "inputs": {
+      "filename_prefix": "video/test",
+      "format": "mp4",
+      "codec": "auto",
+      "video": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "**output"
+    }
+  },
+  "6": {
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-dev-fp8.safetensors"
+    },
+    "class_type": "LTXVAudioVAELoader",
+    "_meta": {
+      "title": "LTXV Audio VAE Loader"
+    }
+  },
+  "7": {
+    "inputs": {
+      "ckpt_name": "ltx-2.3-22b-dev-fp8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "8": {
+    "inputs": {
+      "latent": "latents\\LTXV_AV_00001_.latent"
+    },
+    "class_type": "LoadLatentLTXV",
+    "_meta": {
+      "title": "**latent_in"
+    }
+  }
+}

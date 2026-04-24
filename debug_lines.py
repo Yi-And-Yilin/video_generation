@@ -1,5 +1,5 @@
 
-with open('nsfw_ui.py', 'r', encoding='utf-8') as f:
+with open('main_ui.py', 'r', encoding='utf-8') as f:
     lines = f.readlines()
 
 for i, line in enumerate(lines):

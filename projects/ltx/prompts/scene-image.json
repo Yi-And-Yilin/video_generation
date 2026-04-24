@@ -1,0 +1,43 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_scene_image",
+      "description": "Generate some visual elements for a key frame of the selected scene.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "image_description": { "type": "string", "description": "one sentence to describe the key moment of the scene, focus on visible details, the character's actions, and ongoing events, rather than describing inner thoughts, scene commentary, or literary flair" },
+		  "camera_angle":{"type": "string", "description": "use profession movie terms to indicate camera angle"},
+          "location_elements": { "type": "string", "description": "enviromental elements based on main location and camera angle" },
+          "sex_loras": { "type": "array", "description": "design sex loras for this scene, select them from list in the system prompt" },
+          "female_character_show_her_head": { "type": "boolean", "description": "Decide based on camera angle and scene plot" },
+          "female_character_show_her_frontal_face": { "type": "boolean", "description": "Decide based on camera angle and scene plot" },
+          "female_character_show_her_thighs_or_legs": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },
+          "female_character_show_her_feet": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },
+          "female_character_show_her_back": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },
+          "female_character_show_her_frontal_upper_body": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },	
+          "female_character_show_her_vigana": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },	
+          "female_character_show_her_back_side_of_butt": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },		  
+          "female_character_wear_any_top": { "type": "boolean", "description": "does she wear anything on top"  },		  
+          "female_character_wear_any_bottom": { "type": "boolean", "description": "does she wear anything on bottom,including dress" },	
+          "female_character_pose": { "type": "string", "description": "a description of female's general post and action, separate with comman sign, like standing, sitting on desk, lie on her back, hold man's hair, leaning backward, etc. This should be compatible with the pose of sex loras selected above" },
+          "female_character_moans": { "type": "boolean", "description": "usually it's true if they are actively in sex act" },		
+          "female_character_sweats": { "type": "boolean", "description": "true if this is very active sex" },		  
+          "does_male_character_present": { "type": "boolean", "description": "does male present in the image. decide if the image has the male character. it also counts even if he only show his penis" },
+          "male_character_show_his_dick": { "type": "boolean", "description": "Decide based on camera angle and scene plot" },
+          "male_character_show_his_upper_body": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },
+          "male_character_wear_clothes": { "type": "boolean", "description": "Decide based on scene plot"  },
+          "male_character_show_his_head": { "type": "boolean", "description": "Decide based on camera angle and scene plot"  },
+          "male_character_hand_touch_female_character": { "type": "boolean", "description": "does male's hand touch the female, like hold her leg, press her butt, squeeze her breasts"  },
+          "male_character_action_on_female": { "type": "string", "description": "a description of male's action on female, separate with comman sign, like , lift up the woman's leg, squeeze the woman's breasts, grab the woman's butt, etc. This should be compatible with the pose of sex loras selected above" }
+        },
+        "required": [
+          "image_description", "camera_angle", "location_elements", "sex_loras", "female_character_show_her_head", "female_character_show_her_frontal_face",
+          "female_character_show_her_thighs_or_legs", "female_character_show_her_feet", "female_character_show_her_back", "female_character_show_her_frontal_upper_body",
+          "female_character_show_her_vigana", "female_character_show_her_back_side_of_butt", "female_character_wear_any_top", "female_character_wear_any_bottom", "female_character_pose","female_character_moans","female_character_sweats","does_male_character_present","male_character_show_his_dick","male_character_show_his_upper_body","male_character_wear_clothes","male_character_show_his_head","male_character_hand_touch_female_character","male_character_action_on_female"
+        ]
+      }
+    }
+  }
+]

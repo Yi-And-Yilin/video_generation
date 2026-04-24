@@ -1,0 +1,115 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "answer",
+      "description": "Design multiple locations for a movie scene and the characters' outfits. Each location should have different outfits but all must match the character design.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "string",
+                  "description": "The primary location or setting."
+                },
+                "location_major_elements": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Key objects or architectural features."
+                },
+                "time": {
+                  "type": "string",
+                  "description": "Time of day (e.g., morning, afternoon, night, dawn, dusk)."
+                },
+                "lying_surfaces": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "lying_surface": { "type": "string" },
+                      "objects_on_it": { "type": "array", "items": { "type": "string" } }
+                    },
+                    "required": ["lying_surface", "objects_on_it"]
+                  }
+                },
+                "sitting_surface": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "virtical_surface": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "lighting": {
+                  "type": "string",
+                  "description": "Description of lighting conditions."
+                },
+                "female_character": {
+                  "type": "object",
+                  "properties": {
+                    "top": { "type": "string" },
+                    "bottom": { "type": "string" },
+                    "shoes": { "type": "string" },
+                    "legs": { "type": "string" },
+                    "bra": { "type": "string" },
+                    "panties": { "type": "string" },
+                    "finger_nail": { "type": "string" },
+                    "toe_nails": { "type": "string" },
+                    "face": { "type": "string" },
+                    "makeup": { "type": "string" },
+                    "accessories": {
+                      "type": "object",
+                      "properties": {
+                        "hair": { "type": "string" },
+                        "finger": { "type": "string" },
+                        "wrist": { "type": "string" },
+                        "neck": { "type": "string" },
+                        "waist": { "type": "string" },
+                        "ankle": { "type": "string" },
+                        "belly": { "type": "string" },
+                        "tongue": { "type": "string" },
+                        "thigh": { "type": "string" },
+                        "ear": { "type": "string" },
+                        "face": { "type": "string" }
+                      }
+                    }
+                  },
+                  "required": ["top", "bottom", "shoes", "legs", "bra", "panties", "accessories"]
+                },
+                "male_character": {
+                  "type": "object",
+                  "properties": {
+                    "top": { "type": "string" },
+                    "bottom": { "type": "string" },
+                    "shoes": { "type": "string" },
+                    "legs": { "type": "string" },
+                    "accessories": {
+                      "type": "object",
+                      "properties": {
+                        "hair": { "type": "string" },
+                        "finger": { "type": "string" },
+                        "wrist": { "type": "string" },
+                        "neck": { "type": "string" },
+                        "waist": { "type": "string" },
+                        "ear": { "type": "string" },
+                        "face": { "type": "string" }
+                      }
+                    }
+                  },
+                  "required": ["top", "bottom", "shoes", "legs", "accessories"]
+                }
+              },
+              "required": ["location", "location_major_elements", "time", "lying_surfaces", "sitting_surface", "virtical_surface", "lighting", "female_character", "male_character"]
+            }
+          }
+        },
+        "required": ["locations"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

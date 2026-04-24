@@ -1,0 +1,80 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "answer",
+      "description": "Design a moving scene and the female character's outfit based on the given location and time. The output must follow the required JSON structure.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The primary location or setting of the scene."
+          },
+          "location_major_elements": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Key objects or architectural features in the scene."
+          },
+          "lying_surface": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Surfaces that the character can lie on."
+          },
+          "sitting_surface": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Surfaces that the character can sit on."
+          },
+          "virtical_surface": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Vertical surfaces (walls, panels, etc.) in the scene."
+          },
+          "lighting": {
+            "type": "string",
+            "description": "Description of lighting conditions."
+          },
+          "character": {
+            "type": "object",
+            "properties": {
+              "top": { "type": "string", "description": "Upper body garment." },
+              "bottom": { "type": "string", "description": "Lower body garment." },
+              "shoes": { "type": "string", "description": "Footwear." },
+              "legs": { "type": "string", "description": "Legwear such as socks, stockings, or tights." },
+              "bra": { "type": "string", "description": "Brassiere type or color." },
+              "panties": { "type": "string", "description": "Underwear type or color." },
+              "finger_nail": { "type": "string", "description": "Fingernail polish or decoration." },
+              "toe_nails": { "type": "string", "description": "Toenail polish or decoration." },
+              "face": { "type": "string", "description": "Facial accessories like glasses or masks." },
+              "makeup": { "type": "string", "description": "Makeup style or products." },
+              "accessories": {
+                "type": "object",
+                "properties": {
+                  "hair": { "type": "string", "description": "Hair accessory." },
+                  "finger": { "type": "string", "description": "Ring or finger accessory." },
+                  "wrist": { "type": "string", "description": "Wrist accessory like bracelet or watch." },
+                  "neck": { "type": "string", "description": "Necklace or neck accessory." },
+                  "waist": { "type": "string", "description": "Belt or waist accessory." },
+                  "ankle": { "type": "string", "description": "Ankle accessory." },
+                  "belly": { "type": "string", "description": "Belly button ring or accessory." },
+                  "tongue": { "type": "string", "description": "Tongue piercing or accessory." },
+                  "thigh": { "type": "string", "description": "Thigh accessory like garter." },
+                  "ear": { "type": "string", "description": "Earrings or ear accessory." },
+                  "face": { "type": "string", "description": "Face accessory (e.g., glasses, mask)." }
+                },
+                "additionalProperties": false,
+                "description": "Optional accessories on different body parts."
+              }
+            },
+            "required": ["top", "bottom", "shoes", "legs", "bra", "panties", "accessories"],
+            "additionalProperties": false,
+            "description": "The female character's outfit and details."
+          }
+        },
+        "required": ["location", "location_major_elements", "lying_surface", "sitting_surface", "virtical_surface", "lighting", "character"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

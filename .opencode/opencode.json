@@ -1,0 +1,154 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "video_generation",
+  "provider": {
+    "llama.cpp": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Llama.cpp (Local)",
+      "options": {
+        "baseURL": "http://localhost:8081/v1"
+      },
+      "models": {
+        "qwen": {
+          "name": "qwen"
+        }
+      }
+    }
+  },
+  "model": "llama.cpp/qwen",
+  "agent": {
+    "video_generation": {
+      "mode": "primary",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.1,
+      "maxTokens": 50000,
+      "color": "#4488ff",
+      "permission": {
+        "task": {
+          "*": "deny",
+          "design_characters": "allow",
+          "design_scenes": "allow",
+          "design_shots_for_each_scene": "allow"
+        }
+      }
+    },
+	"simple": {
+      "mode": "primary",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.1,
+      "maxTokens": 90000,
+      "color": "#4488ff",
+	  "permission":{
+		  "task":{
+			"write_prompt_for_one_shot":"deny",
+			"design_characters":"deny",
+			"design_scenes":"deny",
+			"design_shots_for_each_scene":"deny",
+			"image_prompt_qa":"deny",
+			"video_prompt_qa":"deny",
+			"scene_qa":"deny",
+			"task_qa":"deny",
+			"write_prompt_for_one_shot":"deny"
+		  }
+	  }
+    },
+    "design_characters": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 20000,
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "task": {
+          "*": "deny"
+        }
+      }
+    },
+    "design_scenes": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "task": {
+          "*": "deny",
+          "scene_qa": "allow"
+        }
+      }
+    },
+    "design_shots_for_each_scene": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "task": {
+          "*": "deny",
+          "write_prompt_for_one_shot": "allow"
+        }
+      }
+    },
+    "write_prompt_for_one_shot": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "task": {
+          "*": "deny",
+          "image_prompt_qa": "allow",
+          "video_prompt_qa": "allow"
+        }
+      }
+    },
+    "image_prompt_qa": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "edit": "deny",
+        "task": {
+          "*": "deny"
+        }
+      }
+    },
+    "video_prompt_qa": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "edit": "deny",
+        "task": {
+          "*": "deny"
+        }
+      }
+    },
+    "scene_qa": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "edit": "deny",
+        "task": {
+          "*": "deny"
+        }
+      }
+    },
+    "task_qa": {
+      "mode": "subagent",
+      "model": "llama.cpp/qwen",
+      "temperature": 0.9,
+      "maxTokens": 50000,
+      "permission": {
+        "edit": "deny",
+        "task": {
+          "*": "deny"
+        }
+      }
+    }
+  }
+}

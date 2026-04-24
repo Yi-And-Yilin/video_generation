@@ -8,9 +8,11 @@
       "properties": {
         "locations": {
           "type": "array",
-          "description": "List of distinct locations or setups.",
+          "description": "CRITICAL: This key MUST be named 'locations' (NOT 'scenes'). List of distinct locations or setups. Each location must contain location, time, lighting, and prompts fields.",
           "items": {
             "type": "object",
+            "required": ["location", "time", "lighting", "prompts"],
+            "additionalProperties": false,
             "properties": {
               "location": {
                 "type": "string",
@@ -26,9 +28,11 @@
               },
               "prompts": {
                 "type": "array",
-                "description": "Image generation prompts for different acts or moments within this location.",
+                "description": "Image generation prompts for different acts or moments within this location. Each prompt must have sex_act and prompt fields.",
                 "items": {
                   "type": "object",
+                  "required": ["sex_act", "prompt"],
+                  "additionalProperties": false,
                   "properties": {
                     "sex_act": {
                       "type": "string",
@@ -38,14 +42,10 @@
                       "type": "string",
                       "description": "Detailed text prompt for generating the image, be long."
                     }
-                  },
-                  "required": ["sex_act", "prompt"],
-                  "additionalProperties": false
+                  }
                 }
               }
-            },
-            "required": ["location", "time", "lighting", "prompts"],
-            "additionalProperties": false
+            }
           }
         }
       },

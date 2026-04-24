@@ -108,7 +108,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
 
     if "[TOOL_CALLS]:" in char_response:
         try:
-            tc_start = char_response.find("[TOOL_CALLS]:")
+            tc_start = char_response.rfind("[TOOL_CALLS]:")
             tc_json = char_response[tc_start + 13:].strip()
             char_data = json.loads(tc_json)
             if isinstance(char_data, list) and len(char_data) > 0:
@@ -177,7 +177,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
 
     if "[TOOL_CALLS]:" in scene_response:
         try:
-            tc_start = scene_response.find("[TOOL_CALLS]:")
+            tc_start = scene_response.rfind("[TOOL_CALLS]:")
             tc_json = scene_response[tc_start + 13:].strip()
             scene_data = json.loads(tc_json)
             if isinstance(scene_data, list) and len(scene_data) > 0:
@@ -190,6 +190,26 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         scene_data = None
 
     if scene_data:
+        if "scenes" in scene_data and "locations" not in scene_data:
+            locations_converted = []
+            for sc in scene_data.get("scenes", []):
+                loc = {
+                    "location": sc.get("location_name", sc.get("location", "")),
+                    "time": sc.get("time", "daytime"),
+                    "lighting": sc.get("lighting", sc.get("description", "")),
+                    "prompts": []
+                }
+                for shot in sc.get("shots", []):
+                    prompt_obj = {
+                        "sex_act": shot.get("pose", shot.get("sex_act", "")),
+                        "prompt": shot.get("prompt", "")
+                    }
+                    loc["prompts"].append(prompt_obj)
+                locations_converted.append(loc)
+            scene_data["locations"] = locations_converted
+            if status_callback:
+                status_callback(f"Warning: LLM returned 'scenes' format, auto-converted to 'locations' ({len(locations_converted)} locations)")
+        
         result["location_design"] = scene_data
         locations = scene_data.get("locations", [])
         if status_callback:
@@ -402,7 +422,7 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
     video_prompts = None
     if "[TOOL_CALLS]:" in response:
         try:
-            tc_start = response.find("[TOOL_CALLS]:")
+            tc_start = response.rfind("[TOOL_CALLS]:")
             tc_json = response[tc_start + 13:].strip()
             data = json.loads(tc_json)
             if isinstance(data, list) and len(data) > 0:

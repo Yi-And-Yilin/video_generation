@@ -166,7 +166,7 @@ class StandardWorkflowParams:
         """Return a new instance with overridden fields."""
         current = asdict(self)
         current.update(kwargs)
-        return cls(**current)
+        return StandardWorkflowParams(**current)
 
     def for_wan_image(self) -> Dict[str, Any]:
         """Return dict subset for wan_image (SDXL) workflow."""
@@ -396,9 +396,53 @@ def extract_params_from_new_tab_task(task_path: str, scene_index: int = 0,
     return params
 
 
+def extract_z_mode_shot_to_location(scene_data: Dict) -> Optional[Dict]:
+    """
+    Fallback converter when LLM returned 'scenes' format instead of 'locations'.
+    
+    Converts:
+    {"scenes": [{"location_name": "...", "shots": [{"pose": "...", "prompt": "..."}]}]}
+    Into:
+    {"location": "...", "time": "...", "lighting": "...", "prompts": [{"sex_act": "...", "prompt": "..."}]}
+    
+    Parameters
+    ----------
+    scene_data : dict
+        The raw scene design data from LLM response.
+    
+    Returns
+    -------
+    dict or None
+        The converted locations data, or None if input is invalid.
+    """
+    if not isinstance(scene_data, dict):
+        return None
+    
+    if "scenes" not in scene_data:
+        return None
+    
+    locations = []
+    for sc in scene_data.get("scenes", []):
+        loc = {
+            "location": sc.get("location_name", sc.get("location", "")),
+            "time": sc.get("time", "daytime"),
+            "lighting": sc.get("lighting", sc.get("description", "")),
+            "prompts": []
+        }
+        for shot in sc.get("shots", []):
+            prompt_obj = {
+                "sex_act": shot.get("pose", shot.get("sex_act", "")),
+                "prompt": shot.get("prompt", "")
+            }
+            loc["prompts"].append(prompt_obj)
+        locations.append(loc)
+    
+    return {"locations": locations}
+
+
 def extract_params_from_z_mode_task(task_path: str, scene_index: int = 0,
-                                     resolution: str = "1024*1024",
-                                     prompt_index: int = 0) -> StandardWorkflowParams:
+                                   resolution: str = "1024*1024",
+                                   prompt_index: int = 0) -> StandardWorkflowParams:
     """
     Extract StandardWorkflowParams from a Z-mode task.json file.
 
@@ -423,6 +467,18 @@ def extract_params_from_z_mode_task(task_path: str, scene_index: int = 0,
     This is a convenience wrapper that calls extract_params_from_new_tab_task()
     with the same logic but works specifically with Z-mode format.
     """
+    # Attempt fallback conversion if locations is missing
+    with open(task_path, 'r', encoding='utf-8') as f:
+        task = json.load(f)
+    
+    loc_design = task.get("location_design", {})
+    if "locations" not in loc_design and "scenes" in loc_design:
+        converted = extract_z_mode_shot_to_location(loc_design)
+        if converted:
+            task["location_design"] = converted
+            with open(task_path, 'w', encoding='utf-8') as f:
+                json.dump(task, f, indent=4)
+    
     return extract_params_from_new_tab_task(task_path, scene_index, resolution, prompt_index)
 
 
@@ -634,8 +690,8 @@ def new_tab_task_to_ltx_batch_tasks(task_path: str) -> List[Dict]:
         
         for prompt_idx, prompt_obj in enumerate(prompts):
             if isinstance(prompt_obj, dict):
-                image_prompt = prompt_obj.get("image_prompt", "")
-                video_prompt = prompt_obj.get("video_prompt", "")
+                image_prompt = prompt_obj.get("image_prompt", prompt_obj.get("prompt", ""))
+                video_prompt = prompt_obj.get("video_prompt", prompt_obj.get("prompt", ""))
                 prompt_sex_act = prompt_obj.get("sex_act", sex_act)
                 if not prompt_sex_act and sex_act_list:
                     prompt_sex_act = sex_act_list[0]

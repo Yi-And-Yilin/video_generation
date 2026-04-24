@@ -201,6 +201,17 @@ class LLMUtils:
                                 error_msg = val_err
                             else:
                                 parsed_data = parsed_json
+                                if function_definition:
+                                    tc = {
+                                        "index": 0,
+                                        "id": "call_raw",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "answer",
+                                            "arguments": parsed_json
+                                        }
+                                    }
+                                    tool_calls_found.append(tc)
                         except json.JSONDecodeError:
                             error_msg = "Output is not valid JSON."
 
@@ -213,6 +224,17 @@ class LLMUtils:
                 if not error_msg:
                     if tool_calls_found:
                         yield f"\n[TOOL_CALLS]: {json.dumps(tool_calls_found, ensure_ascii=False)}"
+                    elif function_definition and 'parsed_json' in locals():
+                        tc = {
+                            "index": 0,
+                            "id": "call_raw",
+                            "type": "function",
+                            "function": {
+                                "name": "answer",
+                                "arguments": parsed_json
+                            }
+                        }
+                        yield f"\n[TOOL_CALLS]: {json.dumps(tc, ensure_ascii=False)}"
                     return
 
                 else:

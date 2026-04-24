@@ -195,6 +195,14 @@ class LLMUtils:
                     else:
                         try:
                             json_to_parse = full_json_content if full_json_content.strip() else full_content
+                            # If full_content contains refusal text + retry JSON, extract the LAST JSON block
+                            # This happens when LLM refuses (safety filter) then retries with valid JSON
+                            if "{" in json_to_parse:
+                                last_brace = json_to_parse.rfind("{")
+                                json_to_parse = json_to_parse[last_brace:]
+                            elif "[" in json_to_parse:
+                                last_bracket = json_to_parse.rfind("[")
+                                json_to_parse = json_to_parse[last_bracket:]
                             parsed_json = json.loads(json_to_parse)
                             val_err = LLMUtils.validate_schema(parsed_json, function_definition)
                             if val_err:

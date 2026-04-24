@@ -127,6 +127,8 @@ class VideoGenerationApp:
         self.new_open_json_button.pack(side=tk.LEFT, padx=(0, 5))
         self.new_run_comfyui_button = tk.Button(task_action_frame, text="Run ComfyUI", command=self.new_tab_run_comfyui, state=tk.DISABLED)
         self.new_run_comfyui_button.pack(side=tk.LEFT, padx=(0, 5))
+        self.new_stop_comfyui_button = tk.Button(task_action_frame, text="Stop", command=self.new_tab_stop_comfyui, state=tk.DISABLED)
+        self.new_stop_comfyui_button.pack(side=tk.LEFT, padx=(0, 5))
         self.new_browse_task_button = tk.Button(task_action_frame, text="Browse Task", command=self.new_tab_browse_task)
         self.new_browse_task_button.pack(side=tk.LEFT, padx=(0, 5))
         self.new_task_path_var = tk.StringVar(value="No task loaded")
@@ -234,6 +236,8 @@ class VideoGenerationApp:
         self.root.bind_all("<Control-v>", self.handle_paste, add="+"); self.root.after(100, self.process_log_queue); self.root.after(100, self.ltx_process_log_queue); self.root.after(100, self.prompt_process_log_queue); self.root.after(100, self.image_process_log_queue); self.root.after(100, self.new_tab_process_log_queue); self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         os.makedirs(INPUT_FOLDER, exist_ok=True); os.makedirs(OUTPUT_FOLDER, exist_ok=True); os.makedirs(WORKFLOW_TEMPLATE_DIR, exist_ok=True); os.makedirs(PROCESSED_WORKFLOW_FOLDER, exist_ok=True); os.makedirs(LTX_PROJECT_DIR, exist_ok=True); os.makedirs(LTX_WORKFLOW_DIR, exist_ok=True); os.makedirs(os.path.join(SCRIPT_DIR, "debug_workflows"), exist_ok=True)
         self.ltx_running = False; self.ltx_paused = False; self.ltx_cancel_event = threading.Event(); self.ltx_log_queue = Queue(); self.prompt_running = False; self.prompt_log_queue = Queue(); self.image_running = False; self.image_log_queue = Queue()
+        self.new_tab_comfyui_cancel_event = threading.Event()
+        self.new_tab_comfyui_running = False
         self.load_state(); self._load_and_populate_task_types(); self._load_prompt_templates(); self._load_image_tasks(); self.load_logs_into_ui()
         # Populate ComfyUI workflow dropdown with checkpoint options
         checkpoint_options = TemplateCatalog.get_checkpoint_options()
@@ -902,6 +906,12 @@ class VideoGenerationApp:
             self.new_tab_stop_event.set()
             self.new_status_var.set("Stopping...")
 
+    def new_tab_stop_comfyui(self):
+        """Called when the user clicks the Stop button during ComfyUI execution."""
+        if hasattr(self, 'new_tab_comfyui_cancel_event') and self.new_tab_comfyui_cancel_event:
+            self.new_tab_comfyui_cancel_event.set()
+            self.new_status_var.set("Stopping ComfyUI...")
+
     def image_start_run(self):
         if self.image_running: return
         self.image_running = True; self.image_run_button.config(state=tk.DISABLED)
@@ -988,12 +998,17 @@ class VideoGenerationApp:
             self.new_status_var.set(f"Selected task: {os.path.basename(file_path)}")
 
     def new_tab_run_comfyui(self):
-        """Run ComfyUI image generation for each scene in the loaded task.json."""
+        """Run ComfyUI image generation for each scene in the loaded task.json.
+        
+        Sends workflows one-by-one, waits for completion (like WAN tab), and
+        logs progress for each job.
+        """
         task_path = self.new_tab_current_task
         if not task_path or not os.path.exists(task_path):
             self.new_status_var.set("No task loaded")
             return
         self.new_run_comfyui_button.config(state=tk.DISABLED)
+        self.new_stop_comfyui_button.config(state=tk.NORMAL)
         self.new_status_var.set("Generating workflows...")
         selected_template = self.comfyui_template_var.get()
 
@@ -1007,29 +1022,48 @@ class VideoGenerationApp:
                 num_locations = len(locations)
                 resolution = self.image_resolution_var.get()  # e.g., "1024*1024"
 
+                self.new_log_queue.put(f"--- Starting ComfyUI: {job_id} ---")
                 self.root.after(0, lambda: self.new_status_var.set(
                     f"Processing {job_id}: {num_locations} location(s) in {task_mode} mode..."))
 
+                # Count total workflows for progress reporting
+                total_workflows = 0
+                for loc in locations:
+                    prompts = loc.get("prompts", [])
+                    total_workflows += len(prompts) if prompts else 1
+
+                current_workflow = 0
+                self.new_tab_comfyui_cancel_event.clear()
+
                 for scene_idx in range(num_locations):
+                    if self.new_tab_comfyui_cancel_event.is_set():
+                        self.new_log_queue.put("--- ComfyUI cancelled ---")
+                        self.root.after(0, lambda: self.new_status_var.set("Cancelled"))
+                        break
+
                     loc = locations[scene_idx]
                     loc_name = loc.get("location", f"location_{scene_idx}")
-                    
+
                     prompts = loc.get("prompts", [])
-                    if task_mode == "Z" and prompts:
-                        num_prompts = len(prompts)
-                    elif prompts:
-                        num_prompts = len(prompts)
-                    else:
-                        num_prompts = 1
+                    num_prompts = len(prompts) if prompts else 1
                     base_name = f"{job_id}_scene{scene_idx}"
 
                     for prompt_idx in range(num_prompts):
+                        if self.new_tab_comfyui_cancel_event.is_set():
+                            self.new_log_queue.put("--- ComfyUI cancelled ---")
+                            self.root.after(0, lambda: self.new_status_var.set("Cancelled"))
+                            break
+
+                        current_workflow += 1
                         display_idx = scene_idx + 1
                         prompt_label = f"Prompt {prompt_idx+1}/{num_prompts}"
-                        self.root.after(0, lambda n=loc_name, i=display_idx, p=prompt_label:
-                            self.new_log_queue.put(f"Scene {i}/{num_locations} ({p}): {n}"))
-                        self.root.after(0, lambda: self.new_status_var.set(
-                            f"Scene {scene_idx+1}/{num_locations} ({prompt_label}): {loc_name}"))
+                        progress_label = f"{current_workflow}/{total_workflows}"
+
+                        self.new_log_queue.put(
+                            f"[{progress_label}] Scene {display_idx}/{num_locations} ({prompt_label}): {loc_name}")
+                        self.root.after(0, lambda n=loc_name, i=display_idx, p=prompt_label, t=total_workflows, c=current_workflow:
+                            self.new_status_var.set(
+                                f"Scene {i}/{num_locations} ({p}) [{c}/{t}]: {n}"))
 
                         actual_prompt_idx = min(prompt_idx, len(prompts) - 1) if prompts else 0
 
@@ -1082,25 +1116,50 @@ class VideoGenerationApp:
                         with open(scene_file, 'w', encoding='utf-8') as f:
                             f.write(workflow_str)
 
-                        result = self.send_workflow_to_comfyui(workflow_str, f"{base_name}_p{actual_prompt_idx}")
-                        if result:
-                            prompt_preview = prompts[min(prompt_idx, len(prompts) - 1)][:50] if prompts else ""
-                            self.root.after(0, lambda j=job_id, i=display_idx, p=prompt_label:
-                                self.new_log_queue.put(f"Scene {i} ({p}) sent to ComfyUI (prompt: {prompt_preview}...)"))
-                        else:
-                            self.root.after(0, lambda n=loc_name: self.new_log_queue.put(f"ERROR sending {n} to ComfyUI"))
-                        time.sleep(0.5)
+                        # Send to ComfyUI and get prompt_id
+                        prompt_id = self.send_workflow_to_comfyui(workflow_str, f"{base_name}_p{actual_prompt_idx}")
+                        if not prompt_id:
+                            self.new_log_queue.put(f"ERROR sending Scene {display_idx} ({prompt_label}) to ComfyUI")
+                            continue
 
-                total_workflows = sum(len(locations[i].get("prompts", [])) if len(locations) > i else 1 for i in range(num_locations))
-                self.root.after(0, lambda: self.new_status_var.set(f"All {total_workflows} workflows sent to ComfyUI"))
-                self.root.after(0, lambda: self.new_log_queue.put(f"Done: {total_workflows} workflows sent."))
+                        self.new_log_queue.put(
+                            f"[{progress_label}] Scene {display_idx} ({prompt_label}) queued (prompt_id: {prompt_id})")
+
+                        # Wait for completion (blocking, like WAN tab)
+                        hist = self.wait_for_completion(prompt_id)
+                        if hist == 'cancelled':
+                            self.new_log_queue.put("--- ComfyUI cancelled during wait ---")
+                            self.root.after(0, lambda: self.new_status_var.set("Cancelled"))
+                            break
+
+                        if hist:
+                            status = hist.get("status", {})
+                            errors = status.get("errors", {})
+                            if errors:
+                                error_msg = str(errors)
+                                self.new_log_queue.put(
+                                    f"[{progress_label}] Scene {display_idx} ({prompt_label}) FAILED: {error_msg}")
+                            else:
+                                self.new_log_queue.put(
+                                    f"[{progress_label}] Scene {display_idx} ({prompt_label}) done")
+                        else:
+                            self.new_log_queue.put(
+                                f"[{progress_label}] Scene {display_idx} ({prompt_label}) timed out")
+
+                        time.sleep(0.5)  # Small delay between jobs (like WAN tab)
+
+                # Final status
+                if not self.new_tab_comfyui_cancel_event.is_set():
+                    self.new_log_queue.put(f"--- Done: {total_workflows} workflows processed ---")
+                    self.root.after(0, lambda: self.new_status_var.set(f"Done: {total_workflows} workflows"))
 
             except Exception as e:
                 import traceback
-                self.root.after(0, lambda msg=f"Error: {e}", tb=traceback.format_exc():
-                    self.new_log_queue.put(msg + "\n" + tb))
+                self.new_log_queue.put(f"Error: {e}\n{traceback.format_exc()}")
+                self.root.after(0, lambda: self.new_status_var.set(f"Error: {str(e)[:50]}"))
             finally:
                 self.root.after(0, lambda: self.new_run_comfyui_button.config(state=tk.NORMAL))
+                self.root.after(0, lambda: self.new_stop_comfyui_button.config(state=tk.DISABLED))
 
         threading.Thread(target=run_thread, daemon=True).start()
 

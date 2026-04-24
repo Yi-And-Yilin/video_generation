@@ -32,7 +32,7 @@ def load_tool_schema(schema_name):
         return json.load(f)
 
 
-def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_event=None) -> dict:
+def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_event=None, mode="Tag") -> dict:
     """
     Runs the full character -> scene -> prompt generation pipeline.
 
@@ -45,12 +45,15 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
     stop_event : threading.Event or None
         If given, the workflow checks ``stop_event.is_set()`` between
         major phases and aborts early when set.
+    mode : str
+        Either "Tag" (default - generates image prompts via Phase 3) or "Z"
+        (LLM already generates full prompts, Phase 3 is skipped).
 
     Returns
     -------
     dict
         The result dictionary containing job_id, character_design,
-        location_design (with prompts embedded per location), etc.
+        location_design (with prompts embedded per location), mode, etc.
     """
     job_id = generate_random_string(5)
     job_dir = os.path.join(TASKS_DIR, job_id)
@@ -64,7 +67,8 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         "job_id": job_id,
         "user_requirements": user_requirements,
         "character_design": {},
-        "location_design": {"locations": []}
+        "location_design": {"locations": []},
+        "mode": mode
     }
 
     # --- Create task.json IMMEDIATELY (before any LLM call) ---
@@ -130,16 +134,25 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         json.dump(result, f, indent=4)
 
     # ============ Phase 2: Scene / Location Design ============
-    scene_schema = load_tool_schema("location_design")
     male_char = result["character_design"].get("male", {})
     female_char = result["character_design"].get("female", {})
 
-    scene_system_prompt = load_prompt_template(
-        "location_design",
-        user_requirements=user_requirements,
-        male_character=json.dumps(male_char),
-        female_character=json.dumps(female_char)
-    )
+    if mode == "Z":
+        scene_schema = load_tool_schema("scene_design_z")
+        scene_system_prompt = load_prompt_template(
+            "scene_design_z",
+            user_requirements=user_requirements,
+            male_character=json.dumps(male_char),
+            female_character=json.dumps(female_char)
+        )
+    else:
+        scene_schema = load_tool_schema("location_design")
+        scene_system_prompt = load_prompt_template(
+            "location_design",
+            user_requirements=user_requirements,
+            male_character=json.dumps(male_char),
+            female_character=json.dumps(female_char)
+        )
     conv2 = Conversation(system_prompt=scene_system_prompt, tool_schema=scene_schema)
 
     if status_callback:
@@ -199,6 +212,16 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         return result
 
     # ============ Phase 3: Image Prompt Generation ============
+    # Z mode: LLM already generates full prompts with sex_act and prompt fields, skip Phase 3
+    if mode == "Z":
+        if status_callback:
+            status_callback("Z mode: Skipping Phase 3 (LLM already generated prompts)")
+        with open(task_path, 'w', encoding='utf-8') as f:
+            json.dump(result, f, indent=4)
+        if status_callback:
+            status_callback(f"All done (Z mode). Saved to: {task_path}")
+        return result
+
     if not locations:
         if status_callback:
             status_callback("No locations to generate prompts for.")

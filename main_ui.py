@@ -29,7 +29,10 @@ from new_tab_workflow import run_new_tab_workflow
 # Import workflow generator
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "ltx"))
-from workflow_generator import generate_api_workflow, load_lora_lookup
+from workflow_generator import generate_api_workflow, generate_workflow_for_wan_image, load_lora_lookup
+
+# Unified workflow selector
+from workflow_selector import TemplateCatalog, apply_placeholders_unified
 
 # --- Configuration ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -103,6 +106,16 @@ class VideoGenerationApp:
         self.new_status_var = tk.StringVar(value="")
         tk.Label(btn_frame, textvariable=self.new_status_var, font=('Helvetica', 9)).pack(side=tk.LEFT, padx=10)
 
+        # New tab: Type selector (Tag / Z)
+        self.new_tab_mode_frame = tk.Frame(new_left)
+        self.new_tab_mode_frame.pack(fill=tk.X, pady=(0, 5))
+        tk.Label(self.new_tab_mode_frame, text="Type:").pack(side=tk.LEFT, padx=(0, 5))
+        self.new_tab_mode_var = tk.StringVar(value="Z")
+        self.new_tab_mode_dropdown = ttk.Combobox(self.new_tab_mode_frame, textvariable=self.new_tab_mode_var, state="readonly", width=10)
+        self.new_tab_mode_dropdown['values'] = ("Tag", "Z")
+        self.new_tab_mode_dropdown.pack(side=tk.LEFT, padx=(0, 5))
+        self.new_tab_mode_dropdown.bind("<<ComboboxSelected>>", self._on_mode_change)
+
         tk.Label(new_left, text="User Requirement:").pack(anchor=tk.W, pady=(0, 5))
         self.new_requirement_box = scrolledtext.ScrolledText(new_left, height=20, width=80)
         self.new_requirement_box.pack(fill=tk.BOTH, expand=True)
@@ -118,6 +131,14 @@ class VideoGenerationApp:
         self.new_browse_task_button.pack(side=tk.LEFT, padx=(0, 5))
         self.new_task_path_var = tk.StringVar(value="No task loaded")
         tk.Label(task_action_frame, textvariable=self.new_task_path_var, font=('Helvetica', 8), fg='#666666').pack(side=tk.LEFT, padx=(10, 0))
+
+        # ComfyUI workflow template selector
+        self.comfyui_frame = tk.Frame(new_left)
+        self.comfyui_frame.pack(fill=tk.X, pady=(5, 0))
+        tk.Label(self.comfyui_frame, text="ComfyUI:").pack(side=tk.LEFT, padx=(0, 5))
+        self.comfyui_template_var = tk.StringVar(value="wan_image")
+        self.comfyui_template_dropdown = ttk.Combobox(self.comfyui_frame, textvariable=self.comfyui_template_var, state="readonly", width=20)
+        self.comfyui_template_dropdown.pack(side=tk.LEFT, padx=(0, 5))
 
         # Right pane: log panel
         new_right = tk.Frame(new_split)
@@ -214,6 +235,14 @@ class VideoGenerationApp:
         os.makedirs(INPUT_FOLDER, exist_ok=True); os.makedirs(OUTPUT_FOLDER, exist_ok=True); os.makedirs(WORKFLOW_TEMPLATE_DIR, exist_ok=True); os.makedirs(PROCESSED_WORKFLOW_FOLDER, exist_ok=True); os.makedirs(LTX_PROJECT_DIR, exist_ok=True); os.makedirs(LTX_WORKFLOW_DIR, exist_ok=True); os.makedirs(os.path.join(SCRIPT_DIR, "debug_workflows"), exist_ok=True)
         self.ltx_running = False; self.ltx_paused = False; self.ltx_cancel_event = threading.Event(); self.ltx_log_queue = Queue(); self.prompt_running = False; self.prompt_log_queue = Queue(); self.image_running = False; self.image_log_queue = Queue()
         self.load_state(); self._load_and_populate_task_types(); self._load_prompt_templates(); self._load_image_tasks(); self.load_logs_into_ui()
+        # Populate ComfyUI workflow dropdown with checkpoint options
+        checkpoint_options = TemplateCatalog.get_checkpoint_options()
+        if checkpoint_options:
+            self.comfyui_template_dropdown['values'] = checkpoint_options
+            self.comfyui_template_var.set(checkpoint_options[0])
+        else:
+            self.comfyui_template_dropdown['values'] = []
+            self.comfyui_template_var.set("pornmaster_proSDXLV8.safetensors")
         self.conditioning_files = {}; self.latent_files = {}
         # New tab task tracking
         self.new_tab_current_task = ""
@@ -560,10 +589,13 @@ class VideoGenerationApp:
                     if wf_name == 'FlashSVR' and not row["upscale"]:
                         self.log(f"DEBUG: Skipping FlashSVR for {jid}"); continue
 
-                    wf_path = os.path.join(WORKFLOW_TEMPLATE_DIR, f"{wf_name}.json")
-                    if use_cat == 'yes' and row["category"] != 'NA':
-                        spec = os.path.join(WORKFLOW_TEMPLATE_DIR, f"{wf_name}_{row['category'].lower()}.json")
-                        if os.path.exists(spec): wf_path = spec
+                    wf_path = TemplateCatalog._resolve_template_path(wf_name)
+                    if wf_path is None:
+                        # Fallback: try category-specific variant in root
+                        if use_cat == 'yes' and row["category"] != 'NA':
+                            spec = os.path.join(WORKFLOW_TEMPLATE_DIR, f"{wf_name}_{row['category'].lower()}.json")
+                            if os.path.exists(spec): wf_path = spec
+                    if wf_path is None: continue
                     
                     try:
                         with open(wf_path, 'r', encoding='utf-8') as f: wf_str = f.read()
@@ -597,22 +629,6 @@ class VideoGenerationApp:
                         hist = self.wait_for_completion(pid)
                         if hist == 'cancelled': break
                         if hist:
-                            if os.path.exists(CONDITIONING_OUTPUT_FOLDER):
-                                for p in [f"pos_{jid}", f"neg_{jid}"]:
-                                    fname = f"{p}.pt"; src = os.path.join(CONDITIONING_OUTPUT_FOLDER, fname)
-                                    if os.path.exists(src):
-                                        self.discovered_outputs[jid]["pos" if "pos" in p else "neg"] = fname
-                            if os.path.exists(LATENT_OUTPUT_FOLDER):
-                                l_files = os.listdir(LATENT_OUTPUT_FOLDER)
-                                cur_p = f"lat_{jid}_s{step_idx}"; matches = [f for f in l_files if f.startswith(cur_p) and f.endswith(".latent")]
-                                if matches:
-                                    fname = max(matches, key=lambda f: os.path.getmtime(os.path.join(LATENT_OUTPUT_FOLDER, f)))
-                                    self.discovered_outputs[jid]["lat"] = fname
-                                    self.log(f"DEBUG: Discovered {jid} Step {step_idx}: {fname}")
-                    time.sleep(0.5)
-
-                if save_video == 'yes': self._rename_and_cleanup_videos([j["job_id"] for j in flat_jobs])
-
                             if os.path.exists(CONDITIONING_OUTPUT_FOLDER):
                                 for p in [f"pos_{jid}", f"neg_{jid}"]:
                                     fname = f"{p}.pt"; src = os.path.join(CONDITIONING_OUTPUT_FOLDER, fname)
@@ -776,11 +792,9 @@ class VideoGenerationApp:
         self.ltx_status_var.set("Ready")
 
     def _load_prompt_templates(self):
-        prompts_dir = os.path.join(LTX_PROJECT_DIR, "prompts")
-        if not os.path.exists(prompts_dir): return
-        files = [f[:-3] for f in os.listdir(prompts_dir) if f.endswith('.md') and f != 'user-prompt.md']
-        files.sort(); self.prompt_template_dropdown['values'] = files
-        if files: self.prompt_template_var.set(files[0])
+        self.prompt_template_dropdown['values'] = TemplateCatalog.get_prompt_template_options()
+        if self.prompt_template_dropdown['values']:
+            self.prompt_template_var.set(self.prompt_template_dropdown['values'][0])
 
     def _on_prompt_template_selected(self, event): pass
     def _prompt_log(self, msg): self.prompt_log_queue.put(f"[{time.strftime('%H:%M:%S')}] {msg}")
@@ -834,11 +848,9 @@ class VideoGenerationApp:
         if f: os.remove(f)
 
     def _load_image_tasks(self):
-        tasks_dir = os.path.join(LTX_PROJECT_DIR, "tasks")
-        if not os.path.exists(tasks_dir): return
-        files = sorted([f for f in os.listdir(tasks_dir) if f.endswith('.json')], reverse=True)
-        self.image_task_dropdown['values'] = files
-        if files: self.image_task_var.set(files[0])
+        self.image_task_dropdown['values'] = TemplateCatalog.get_image_task_options()
+        if self.image_task_dropdown['values']:
+            self.image_task_var.set(self.image_task_dropdown['values'][0])
 
     def _refresh_image_tasks(self): self._load_image_tasks()
     def image_process_log_queue(self):
@@ -867,6 +879,23 @@ class VideoGenerationApp:
         self.new_log_window.see(tk.END)
         self.root.after(100, self.new_tab_process_log_queue)
 
+    def _on_mode_change(self, event=None):
+        """Handle Type dropdown change - grey out ComfyUI template in Z mode."""
+        mode = self.new_tab_mode_var.get()
+        if mode == "Z":
+            self.comfyui_template_dropdown.config(state="disabled")
+            self.comfyui_template_var.set("z-image")
+        else:
+            self.comfyui_template_dropdown.config(state="readonly")
+            try:
+                options = TemplateCatalog.get_wan_workflow_options()
+                if options:
+                    self.comfyui_template_dropdown['values'] = options
+                    if self.comfyui_template_var.get() not in options:
+                        self.comfyui_template_var.set(options[0] if options else "wan_image")
+            except:
+                pass
+
     def new_tab_stop(self):
         """Called when the user clicks the Stop button."""
         if hasattr(self, 'new_tab_stop_event') and self.new_tab_stop_event:
@@ -884,7 +913,7 @@ class VideoGenerationApp:
             with open(os.path.join(LTX_PROJECT_DIR, "tasks", task_file), 'r', encoding='utf-8') as f: data = json.load(f)
             scenes = data.get("scenes", []); job_id = time.strftime("%Y%m%d_%H%M%S")
             
-            wf_path = os.path.join(WORKFLOW_TEMPLATE_DIR, "wan_image.json")
+            wf_path = os.path.join(WORKFLOW_TEMPLATE_DIR, "image", "wan_image.json")
             if not os.path.exists(wf_path):
                 self.log(f"ERROR: wan_image.json template not found at {wf_path}"); return
 
@@ -959,23 +988,121 @@ class VideoGenerationApp:
             self.new_status_var.set(f"Selected task: {os.path.basename(file_path)}")
 
     def new_tab_run_comfyui(self):
-        """Placeholder for running ComfyUI image generation from task.json."""
+        """Run ComfyUI image generation for each scene in the loaded task.json."""
         task_path = self.new_tab_current_task
         if not task_path or not os.path.exists(task_path):
             self.new_status_var.set("No task loaded")
             return
         self.new_run_comfyui_button.config(state=tk.DISABLED)
-        try:
-            with open(task_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            job_id = data.get("job_id", "unknown")
-            locations = data.get("location_design", {}).get("locations", [])
-            num_locations = len(locations)
-            self.new_status_var.set(f"Running ComfyUI for task {job_id} ({num_locations} locations) — placeholder")
-            self.root.after(5000, lambda: self.new_run_comfyui_button.config(state=tk.NORMAL))
-        except Exception as e:
-            self.new_status_var.set(f"Error: {e}")
-            self.root.after(0, lambda: self.new_run_comfyui_button.config(state=tk.NORMAL))
+        self.new_status_var.set("Generating workflows...")
+        selected_template = self.comfyui_template_var.get()
+
+        def run_thread():
+            try:
+                with open(task_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                job_id = data.get("job_id", "unknown")
+                locations = data.get("location_design", {}).get("locations", [])
+                task_mode = data.get("mode", "Tag")
+                num_locations = len(locations)
+                resolution = self.image_resolution_var.get()  # e.g., "1024*1024"
+
+                self.root.after(0, lambda: self.new_status_var.set(
+                    f"Processing {job_id}: {num_locations} location(s) in {task_mode} mode..."))
+
+                for scene_idx in range(num_locations):
+                    loc = locations[scene_idx]
+                    loc_name = loc.get("location", f"location_{scene_idx}")
+                    
+                    prompts = loc.get("prompts", [])
+                    if task_mode == "Z" and prompts:
+                        num_prompts = len(prompts)
+                    elif prompts:
+                        num_prompts = len(prompts)
+                    else:
+                        num_prompts = 1
+                    base_name = f"{job_id}_scene{scene_idx}"
+
+                    for prompt_idx in range(num_prompts):
+                        display_idx = scene_idx + 1
+                        prompt_label = f"Prompt {prompt_idx+1}/{num_prompts}"
+                        self.root.after(0, lambda n=loc_name, i=display_idx, p=prompt_label:
+                            self.new_log_queue.put(f"Scene {i}/{num_locations} ({p}): {n}"))
+                        self.root.after(0, lambda: self.new_status_var.set(
+                            f"Scene {scene_idx+1}/{num_locations} ({prompt_label}): {loc_name}"))
+
+                        actual_prompt_idx = min(prompt_idx, len(prompts) - 1) if prompts else 0
+
+                        from parameter_extraction import extract_params_from_new_tab_task
+                        params = extract_params_from_new_tab_task(
+                            task_path,
+                            scene_index=scene_idx,
+                            resolution=resolution,
+                            prompt_index=actual_prompt_idx
+                        )
+
+                        if task_mode == "Z":
+                            workflow = TemplateCatalog.load_template("z-image")
+                            params_dict = dict(params.for_wan_image())
+                            params_dict["width"] = params.width
+                            params_dict["height"] = params.height
+                            params_dict["steps"] = 8
+                            params_dict["cfg"] = 1
+                            params_dict["sampler_name"] = "res_multistep"
+                            params_dict["scheduler"] = "simple"
+                            params_dict["checkpoint"] = "zImageTurboNSFW_50BF16Diffusion.safetensors"
+                            params_dict["random_number"] = params.random_number
+                            for i in range(1, 6):
+                                params_dict[f"lora{i}_name"] = "xl\\add-detail.safetensors"
+                                params_dict[f"lora{i}_strength"] = 0.0
+                        else:
+                            params_dict = dict(params.for_wan_image())
+                            lora_names = [p.get("lora_name", "") for p in getattr(params, "sex_loras", [])]
+                            lora_strengths = [0.7] * len(getattr(params, "sex_loras", []))
+                            from workflow_generator import _resolve_lora_params
+                            lora_resolved = _resolve_lora_params(
+                                params.main_sex_act if hasattr(params, 'main_sex_act') else [],
+                                "image_lora_lookup.csv",
+                                workflow_name=selected_template,
+                                extra_lora_names=lora_names,
+                                extra_lora_strengths=lora_strengths,
+                            )
+                            params_dict.update(lora_resolved)
+                            params_dict["checkpoint"] = selected_template
+                            workflow = TemplateCatalog.load_template("wan_image")
+
+                        workflow = apply_placeholders_unified(workflow, params_dict)
+                        debug_filename = f"{base_name}_p{actual_prompt_idx}" + ("_z" if task_mode == "Z" else f"_{selected_template}")
+
+                        workflow_str = json.dumps(workflow)
+
+                        debug_dir = os.path.join(SCRIPT_DIR, "debug_workflows")
+                        os.makedirs(debug_dir, exist_ok=True)
+                        scene_file = os.path.join(debug_dir, debug_filename)
+                        with open(scene_file, 'w', encoding='utf-8') as f:
+                            f.write(workflow_str)
+
+                        result = self.send_workflow_to_comfyui(workflow_str, f"{base_name}_p{actual_prompt_idx}")
+                        if result:
+                            prompt_preview = prompts[min(prompt_idx, len(prompts) - 1)][:50] if prompts else ""
+                            self.root.after(0, lambda j=job_id, i=display_idx, p=prompt_label:
+                                self.new_log_queue.put(f"Scene {i} ({p}) sent to ComfyUI (prompt: {prompt_preview}...)"))
+                        else:
+                            self.root.after(0, lambda n=loc_name: self.new_log_queue.put(f"ERROR sending {n} to ComfyUI"))
+                        time.sleep(0.5)
+
+                total_workflows = sum(len(locations[i].get("prompts", [])) if len(locations) > i else 1 for i in range(num_locations))
+                self.root.after(0, lambda: self.new_status_var.set(f"All {total_workflows} workflows sent to ComfyUI"))
+                self.root.after(0, lambda: self.new_log_queue.put(f"Done: {total_workflows} workflows sent."))
+
+            except Exception as e:
+                import traceback
+                self.root.after(0, lambda msg=f"Error: {e}", tb=traceback.format_exc():
+                    self.new_log_queue.put(msg + "\n" + tb))
+            finally:
+                self.root.after(0, lambda: self.new_run_comfyui_button.config(state=tk.NORMAL))
+
+        threading.Thread(target=run_thread, daemon=True).start()
 
     def new_tab_run(self):
         if hasattr(self, 'new_tab_running') and self.new_tab_running:
@@ -994,12 +1121,14 @@ class VideoGenerationApp:
         self.new_log_window.delete('1.0', tk.END)
         self.new_log_window.configure(state='disabled')
 
+        mode = self.new_tab_mode_var.get()
+
         def status_callback(msg, end="\n"):
             self.root.after(0, lambda m=msg, e=end: self.new_log_queue.put(m + e))
 
         def run_thread():
             try:
-                result = run_new_tab_workflow(requirements, status_callback, self.new_tab_stop_event)
+                result = run_new_tab_workflow(requirements, status_callback, self.new_tab_stop_event, mode=mode)
                 job_id = result.get('job_id', 'unknown')
                 task_path = os.path.join(SCRIPT_DIR, "tasks", job_id, "task.json")
                 self.root.after(0, lambda: self.new_status_var.set(f"Done: {job_id}"))

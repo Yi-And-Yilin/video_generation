@@ -1,0 +1,56 @@
+{
+  "type": "function",
+  "function": {
+    "name": "answer",
+    "description": "Design multiple locations in a movie, each with its own time, lighting, and image prompts for different acts.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "locations": {
+          "type": "array",
+          "description": "List of distinct locations or setups.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "The primary location or setting of the scene (e.g., 'abandoned warehouse', 'rainy city street')."
+              },
+              "time": {
+                "type": "string",
+                "description": "Time of day (e.g., 'morning', 'afternoon', 'night', 'dawn', 'dusk', 'golden hour')."
+              },
+              "lighting": {
+                "type": "string",
+                "description": "Description of lighting conditions (e.g., 'harsh neon', 'soft candlelight', 'overcast diffuse')."
+              },
+              "prompts": {
+                "type": "array",
+                "description": "Image generation prompts for different acts or moments within this location.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sex_act": {
+                      "type": "string",
+                      "description": "select from one of these: sitting_cowgirl, lying_cowgirl,standing_missionary, lying_missionary,mating_press_missionary,  sitting_reverse_cowgirl, lying_reverse_cowgirl,kissing, standing_doggy, lean_forward_doggy, kneeling_doggy,lying_on_tummy_doggy,tongue_kissing, tougue_licking_oral_sex, sucking_oral_sex, deepthroat, standing_cunnilingus,squatting_cunnilingus, lying_cunnilingus ."
+                    },
+                    "prompt": {
+                      "type": "string",
+                      "description": "Detailed text prompt for generating the image, be long."
+                    }
+                  },
+                  "required": ["sex_act", "prompt"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": ["location", "time", "lighting", "prompts"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["locations"],
+      "additionalProperties": false
+    }
+  }
+}

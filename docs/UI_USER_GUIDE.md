@@ -2,7 +2,7 @@
 
 ## Overview
 
-Video Generation UI is a Tkinter-based desktop application that provides a unified interface for AI-powered media generation workflows. The application uses a tabbed interface with four main sections, each dedicated to a specific type of generation task.
+Video Generation UI is a Tkinter-based desktop application that provides a unified interface for AI-powered media generation workflows. The application uses a tabbed interface with five tabs, each dedicated to a specific type of generation task.
 
 ### Technical Details
 
@@ -16,14 +16,98 @@ Video Generation UI is a Tkinter-based desktop application that provides a unifi
 
 ## Tab Overview
 
-The application uses a `ttk.Notebook` with four tabs:
+The application uses a `ttk.Notebook` with five tabs:
 
 | Tab | Purpose |
 |-----|---------|
+| **New** | LLM-powered character/scene design pipeline, then ComfyUI image generation |
 | **WAN** | Multi-step video generation pipeline with row-based task management |
 | **LTX** | Video/image generation with configurable parameters |
 | **Prompt** | LLM-powered prompt generation from templates |
 | **Image** | Image generation from saved tasks |
+
+---
+
+## New Tab
+
+The New tab provides an LLM-powered pipeline for character and scene design, followed by ComfyUI image generation.
+
+### Layout
+
+```
++----------------------------------------------------------+
+|  [Run] [Stop] [Status] Type:[Z ▼]                       |  <- Action Bar
++----------------------------------------------------------+
+|  User Requirement:                                        |  <- ScrolledText (20 lines)
+|  +------------------------------------------------------+|
+|  |                                                      ||
+|  |                                                      ||
+|  +------------------------------------------------------+|
++----------------------------------------------------------+
+|  [Open JSON] [Run ComfyUI] [Browse Task]  [task path]   |  <- Task Action Bar
++----------------------------------------------------------+
+|  ComfyUI: [z-image ▼] (disabled in Z mode)              |  <- Workflow Selector
++----------------------------------------------------------+
+|  +------------------------------------------------------+|
+|  | Log:                                                  ||  <- Log Window (20 lines)
+|  |  [10:00:00] Job ID: ...                               ||
+|  |  [10:00:01] Creating task.json...                     ||
+|  |  [10:00:02] Phase 1: Character Design                ||
+|  |  [10:00:03] LLM chunk...                              ||
+|  +------------------------------------------------------+|
++----------------------------------------------------------+
+```
+
+### Type Dropdown
+
+- **Options**: `Tag` (standard pipeline) or `Z` (direct prompt generation)
+- **Default**: `Z`
+- **Behavior when switching to Z**:
+  - ComfyUI template dropdown is **disabled** (greyed out)
+  - Template is automatically set to `z-image`
+  - Phase 3 (CSV-based prompt generation) is **skipped** during pipeline execution
+  - LLM generates complete `sex_act` + `prompt` pairs directly in Phase 2
+- **Behavior when switching to Tag**:
+  - ComfyUI template dropdown is **re-enabled**
+  - User can select any workflow template
+  - Full 3-phase pipeline runs (character → scene → CSV prompt generation)
+
+### ComfyUI Workflow Selector
+
+- **ComfyUI dropdown**: Lists all available ComfyUI workflow templates from `projects/wan/workflow/` (root + `image/` + `video/` subfolders)
+- **Default**: `wan_image` (SDXL image generation) in Tag mode; `z-image` in Z mode
+- **Available templates (Tag mode)**: `FlashSVR`, `clean_up`, `final_upscale`, `wan_image`, `wan_2.2_step0`, `wan_2.2_step1`, `wan_2.2_step2`, `wan_2.2_step3`, and category-specific variants (e.g., `wan_2.1_step1_masturbation`, `wan_2.1_step1_missionary`)
+- **Available templates (Z mode)**: Only `z-image` (dropdown is disabled)
+- **Behavior**: Selecting a different template changes the ComfyUI workflow used when clicking "Run ComfyUI"
+- **Template discovery**: Powered by `TemplateCatalog.get_wan_workflow_options()` which scans `projects/wan/workflow/` (root, `image/`, `video/`) and returns templates sorted with priority ordering
+- **Template loading**: When Run ComfyUI is clicked, the selected template is loaded via `TemplateCatalog.load_template()` and placeholders are filled using `apply_placeholders_unified()`
+
+### Two-Phase Workflow
+
+1. **Phase 1 — LLM Pipeline**: Click **Run** to generate character design, scene/location design, and image prompts via Ollama. The pipeline saves `task.json` at multiple checkpoints.
+
+   **Tag mode phases:**
+   - Phase 1: Character Design (LLM)
+   - Phase 2: Location/Scene Design (LLM)
+   - Phase 3: Image Prompt Generation (CSV-based, 3 prompts per location)
+
+   **Z mode phases:**
+   - Phase 1: Character Design (LLM)
+   - Phase 2: Scene Design with Direct Prompts (LLM generates `sex_act` + `prompt` pairs)
+   - Phase 3: Skipped (LLM already provided complete prompts)
+
+2. **Phase 2 — ComfyUI Generation**: After the LLM pipeline completes, click **Run ComfyUI** to send generated image workflows to your ComfyUI instance.
+
+   **Tag mode:** Uses the selected workflow template from the ComfyUI dropdown.
+   **Z mode:** Uses the fixed `z-image` template with hardcoded defaults (steps=8, cfg=1, sampler=res_multistep, scheduler=simple).
+
+### Task Action Bar
+
+| Button | Action |
+|--------|--------|
+| **`Open JSON`** | Open the generated `task.json` file for the current job |
+| **`Run ComfyUI`** | Send all scene prompts to ComfyUI for image generation using the selected workflow template |
+| **`Browse Task`** | Browse task files |
 
 ---
 

@@ -46,7 +46,7 @@ class LLMUtils:
         context_window: int = 40000,
         reasoning_budget: Optional[int] = None,
         reasoning_budget_message: Optional[str] = None,
-        enable_thinking: Optional[bool] = None,
+        enable_thinking: bool = False,
         thinking_stop_token_bias: Optional[float] = None,
     ):
         self.base_url = base_url.rstrip("/")
@@ -251,6 +251,13 @@ class LLMUtils:
                         logger.info("[CHAT] No tool calls, validating as plain JSON")
                         try:
                             json_to_parse = full_json_content if full_json_content.strip() else full_response
+                            # If LLM refused then retried with valid JSON, extract only the retry JSON
+                            if "{" in json_to_parse:
+                                last_brace = json_to_parse.rfind("{")
+                                json_to_parse = json_to_parse[last_brace:]
+                            elif "[" in json_to_parse:
+                                last_bracket = json_to_parse.rfind("[")
+                                json_to_parse = json_to_parse[last_bracket:]
                             parsed_json = json.loads(json_to_parse)
                             val_err = LLMUtils._validate_schema(parsed_json, conversation.tool_schema)
                             if val_err:
@@ -266,11 +273,24 @@ class LLMUtils:
                 if chat_mode == "json" and not validation_error:
                     logger.info("[CHAT] Validation passed, adding assistant message to conversation")
                     assistant_msg = {"role": "assistant", "content": full_response}
-                    if tool_calls_found:
-                        assistant_msg["tool_calls"] = tool_calls_found
-                    conversation.add_assistant_message(assistant_msg)
+
+                    # If raw JSON was parsed (no tool_calls from API), wrap it as a tool call
+                    # so downstream parsers can find [TOOL_CALLS]:
+                    if parsed_data and not tool_calls_found:
+                        wrapped_tc = {
+                            "index": 0,
+                            "id": "call_raw",
+                            "type": "function",
+                            "function": {
+                                "name": "answer",
+                                "arguments": parsed_data
+                            }
+                        }
+                        tool_calls_found = [wrapped_tc]
+                        logger.info("[CHAT] Wrapped raw JSON as tool_calls")
 
                     if tool_calls_found:
+                        assistant_msg["tool_calls"] = tool_calls_found
                         logger.info(f"[CHAT] Returning tool calls: {json.dumps(tool_calls_found, ensure_ascii=False)}")
                         yield f"\n[TOOL_CALLS]: {json.dumps(tool_calls_found, ensure_ascii=False)}"
                     return parsed_data

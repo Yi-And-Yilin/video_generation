@@ -274,6 +274,8 @@ class LLMUtils:
                                 else:
                                     raise json.JSONDecodeError("No JSON delimiter found", json_to_parse, 0)
                                 extracted = json_to_parse[start:]
+                                # Strip trailing markdown code fences (```) that LLM may append
+                                extracted = re.sub(r'\s*```\s*$', '', extracted)
                                 logger.info(f"[CHAT] Extracted JSON from index {start}, length: {len(extracted)}, first 200: {repr(extracted[:200])}")
                                 try:
                                     parsed_json = json.loads(extracted)

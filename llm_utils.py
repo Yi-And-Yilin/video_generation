@@ -203,6 +203,10 @@ class LLMUtils:
                             elif "[" in json_to_parse:
                                 last_bracket = json_to_parse.rfind("[")
                                 json_to_parse = json_to_parse[last_bracket:]
+                            # Strip trailing markdown code fences (```) that LLM may append after the JSON
+                            json_to_parse = json_to_parse.rstrip()
+                            while json_to_parse.endswith('```'):
+                                json_to_parse = json_to_parse[:-3].rstrip()
                             parsed_json = json.loads(json_to_parse)
                             val_err = LLMUtils.validate_schema(parsed_json, function_definition)
                             if val_err:

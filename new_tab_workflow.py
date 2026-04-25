@@ -32,6 +32,126 @@ def load_tool_schema(schema_name):
         return json.load(f)
 
 
+def _normalize_z_mode_scene_data(scene_data: dict) -> dict:
+    """
+    Normalize LLM output from Z-mode scene design to match the schema expected
+    by `scene_design_z.json` for validation.
+
+    The LLM often uses different field names than the schema requires:
+      - `location_name` → `location`
+      - `sex_pose`  → `sex_act`
+      - `image_prompt` → `prompt`
+    It may also be missing required fields like `time` and `lighting`.
+
+    This function:
+      - Renames fields to match the schema
+      - Adds placeholder values for missing required fields
+      - Strips extra fields that the schema rejects (e.g. `id`, `scene_description`)
+      - Preserves all useful data the LLM provides
+
+    Returns a new dict with normalized `locations` array.
+    """
+    if not isinstance(scene_data, dict):
+        return scene_data
+
+    # Extract locations (handle both 'locations' and 'scenes' keys)
+    raw_locations = scene_data.get("locations", scene_data.get("scenes", []))
+    if not isinstance(raw_locations, list):
+        return scene_data
+
+    normalized_locations = []
+    for raw_loc in raw_locations:
+        if not isinstance(raw_loc, dict):
+            continue
+
+        norm = {}
+
+        # --- location field ---
+        # Accept any of: location, location_name, name, place
+        loc_name = (
+            raw_loc.get("location")
+            or raw_loc.get("location_name")
+            or raw_loc.get("name")
+            or raw_loc.get("place", "")
+        )
+        norm["location"] = loc_name
+
+        # --- time field ---
+        # Try to extract from scene_description if not present
+        time_val = raw_loc.get("time")
+        if not time_val and "scene_description" in raw_loc:
+            desc = raw_loc["scene_description"]
+            if isinstance(desc, str):
+                for time_hint in [
+                    "morning", "afternoon", "evening", "night",
+                    "dawn", "dusk", "dusk", "noon", "midnight",
+                    "sunrise", "sunset", "daytime", "dark"
+                ]:
+                    if time_hint in desc.lower():
+                        time_val = time_hint
+                        break
+        norm["time"] = time_val or "daytime"
+
+        # --- lighting field ---
+        lighting_val = raw_loc.get("lighting")
+        if not lighting_val and "scene_description" in raw_loc:
+            desc = raw_loc["scene_description"]
+            if isinstance(desc, str):
+                for light_hint in [
+                    "bright", "dark", "dim", "soft", "harsh",
+                    "warm", "cool", "neon", "candlelight",
+                    "sunlight", "moonlight", "overcast", "gloomy"
+                ]:
+                    if light_hint in desc.lower():
+                        lighting_val = light_hint
+                        break
+        norm["lighting"] = lighting_val or "natural light"
+
+        # --- prompts field ---
+        raw_prompts = raw_loc.get("prompts", [])
+        if not isinstance(raw_prompts, list):
+            raw_prompts = []
+
+        normalized_prompts = []
+        for raw_prompt in raw_prompts:
+            if not isinstance(raw_prompt, dict):
+                continue
+
+            norm_prompt = {}
+            # Accept any of: sex_act, sex_pose, pose, action
+            act_val = (
+                raw_prompt.get("sex_act")
+                or raw_prompt.get("sex_pose")
+                or raw_prompt.get("pose")
+                or raw_prompt.get("action", "")
+            )
+            norm_prompt["sex_act"] = act_val
+
+            # Accept any of: prompt, image_prompt, image, caption
+            prompt_val = (
+                raw_prompt.get("prompt")
+                or raw_prompt.get("image_prompt")
+                or raw_prompt.get("image")
+                or raw_prompt.get("caption", "")
+            )
+            norm_prompt["prompt"] = prompt_val
+
+            normalized_prompts.append(norm_prompt)
+
+        norm["prompts"] = normalized_prompts
+
+        normalized_locations.append(norm)
+
+    result = dict(scene_data)
+    result["locations"] = normalized_locations
+
+    # If original had 'scenes' key, remove it to avoid confusion
+    if "scenes" in result:
+        del result["scenes"]
+
+    return result
+
+
 def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_event=None, mode="Tag") -> dict:
     """
     Runs the full character -> scene -> prompt generation pipeline.
@@ -74,7 +194,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
     # --- Create task.json IMMEDIATELY (before any LLM call) ---
     task_path = os.path.join(job_dir, "task.json")
     with open(task_path, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=4)
+        json.dump(result, f, indent=4, ensure_ascii=False)
     if status_callback:
         status_callback("Created task.json")
 
@@ -103,7 +223,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
             status_callback("Stopped by user during character design.")
         # Save partial task.json
         with open(task_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, indent=4)
+            json.dump(result, f, indent=4, ensure_ascii=False)
         return result
 
     if "[TOOL_CALLS]:" in char_response:
@@ -131,7 +251,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
 
     # Save after Phase 1
     with open(task_path, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=4)
+        json.dump(result, f, indent=4, ensure_ascii=False)
 
     # ============ Phase 2: Scene / Location Design ============
     male_char = result["character_design"].get("male", {})
@@ -142,16 +262,16 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         scene_system_prompt = load_prompt_template(
             "scene_design_z",
             user_requirements=user_requirements,
-            male_character=json.dumps(male_char),
-            female_character=json.dumps(female_char)
+            male_character=json.dumps(male_char, ensure_ascii=False),
+            female_character=json.dumps(female_char, ensure_ascii=False)
         )
     else:
         scene_schema = load_tool_schema("location_design")
         scene_system_prompt = load_prompt_template(
             "location_design",
             user_requirements=user_requirements,
-            male_character=json.dumps(male_char),
-            female_character=json.dumps(female_char)
+            male_character=json.dumps(male_char, ensure_ascii=False),
+            female_character=json.dumps(female_char, ensure_ascii=False)
         )
     conv2 = Conversation(system_prompt=scene_system_prompt, tool_schema=scene_schema)
 
@@ -172,7 +292,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         if status_callback:
             status_callback("Stopped by user during scene design.")
         with open(task_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, indent=4)
+            json.dump(result, f, indent=4, ensure_ascii=False)
         return result
 
     if "[TOOL_CALLS]:" in scene_response:
@@ -190,27 +310,17 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         scene_data = None
 
     if scene_data:
-        if "scenes" in scene_data and "locations" not in scene_data:
-            locations_converted = []
-            for sc in scene_data.get("scenes", []):
-                loc = {
-                    "location": sc.get("location_name", sc.get("location", "")),
-                    "time": sc.get("time", "daytime"),
-                    "lighting": sc.get("lighting", sc.get("description", "")),
-                    "prompts": []
-                }
-                for shot in sc.get("shots", []):
-                    prompt_obj = {
-                        "sex_act": shot.get("pose", shot.get("sex_act", "")),
-                        "prompt": shot.get("prompt", "")
-                    }
-                    loc["prompts"].append(prompt_obj)
-                locations_converted.append(loc)
-            scene_data["locations"] = locations_converted
+        # Normalize Z-mode scene data: rename fields, add placeholders for missing
+        # required fields (time, lighting), strip extra fields the schema rejects.
+        original_keys = set(scene_data.keys())
+        normalized_data = _normalize_z_mode_scene_data(scene_data)
+        normalized_keys = set(normalized_data.keys())
+
+        if normalized_keys != original_keys:
             if status_callback:
-                status_callback(f"Warning: LLM returned 'scenes' format, auto-converted to 'locations' ({len(locations_converted)} locations)")
-        
-        result["location_design"] = scene_data
+                status_callback("Normalizing LLM output: renaming fields and adding placeholders")
+
+        result["location_design"] = normalized_data
         locations = scene_data.get("locations", [])
         if status_callback:
             loc_names = [loc.get("location", "unknown") for loc in locations]
@@ -223,7 +333,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
 
     # Save after Phase 2
     with open(task_path, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=4)
+        json.dump(result, f, indent=4, ensure_ascii=False)
 
     # Check stop before entering prompt generation
     if stop_event and stop_event.is_set():
@@ -237,7 +347,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         if status_callback:
             status_callback("Z mode: Skipping Phase 3 (LLM already generated prompts)")
         with open(task_path, 'w', encoding='utf-8') as f:
-            json.dump(result, f, indent=4)
+            json.dump(result, f, indent=4, ensure_ascii=False)
     else:
         if not locations:
             if status_callback:
@@ -288,7 +398,7 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
 
     # Final save
     with open(task_path, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=4)
+        json.dump(result, f, indent=4, ensure_ascii=False)
 
     if status_callback:
         status_callback(f"All done. Saved to: {task_path}")
@@ -352,15 +462,12 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
     """
     Phase 4: Generate video prompts using the video_prompting LLM.
     
-    For each image prompt, calls the LLM to generate:
+    For each location and its prompts, calls the LLM to generate:
     - action (motion description)
     - line (Chinese dialogue)
-    - audio (background + movement sounds)
     - female_character_sound (vocal quality)
     
-    Then combines them into a video_prompt string.
-    Finally transforms each prompt from a string to:
-    {"image_prompt": "...", "video_prompt": "..."}
+    Returns the locations with updated prompts (each prompt now has "video_prompt" dict).
     
     Returns the locations with updated prompts, or None on failure.
     """
@@ -374,15 +481,41 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
     if status_callback:
         status_callback("Generating video prompts...")
     
-    # Build first_frame_image_prompts from existing data
-    first_frame_prompts = _build_first_frame_image_prompts(locations)
-    if not first_frame_prompts:
+    # Build locations_with_prompts for the LLM input
+    # Structure: [{"location": "...", "prompts": [{"image_prompt": "...", "sex_act": "..."}, ...]}, ...]
+    locations_with_prompts = []
+    for loc in locations:
+        loc_data = {
+            "location": loc.get("location", "Unknown"),
+            "prompts": []
+        }
+        prompts = loc.get("prompts", [])
+        for prompt in prompts:
+            if isinstance(prompt, dict):
+                if "image_prompt" in prompt:
+                    loc_data["prompts"].append({
+                        "image_prompt": prompt["image_prompt"],
+                        "sex_act": prompt.get("sex_act", "unknown")
+                    })
+                else:
+                    loc_data["prompts"].append({
+                        "image_prompt": prompt.get("prompt", ""),
+                        "sex_act": prompt.get("sex_act", "unknown")
+                    })
+            else:
+                loc_data["prompts"].append({
+                    "image_prompt": prompt,
+                    "sex_act": "unknown"
+                })
+        locations_with_prompts.append(loc_data)
+    
+    if not locations_with_prompts:
         if status_callback:
             status_callback("No prompts available for video generation.")
         return None
     
     if status_callback:
-        status_callback(f"Preparing {len(first_frame_prompts)} prompts for video generation...")
+        status_callback(f"Preparing video prompts for {len(locations_with_prompts)} locations...")
     
     try:
         # Load video_prompting schema and template
@@ -390,9 +523,9 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
         video_system_prompt = load_prompt_template(
             "video_prompting",
             user_requirements=user_requirements,
-            male_character=json.dumps(character_design.get("male", {})),
-            female_character=json.dumps(character_design.get("female", {})),
-            first_frame_image_prompts=json.dumps(first_frame_prompts)
+            male_character=json.dumps(character_design.get("male", {}), ensure_ascii=False),
+            female_character=json.dumps(character_design.get("female", {}), ensure_ascii=False),
+            locations_with_prompts=json.dumps(locations_with_prompts, ensure_ascii=False)
         )
     except Exception as e:
         if status_callback:
@@ -438,50 +571,67 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
             status_callback("Warning: Could not parse video prompts from LLM response")
         return None
     
-    vp_list = video_prompts["video_prompts"]
-    if len(vp_list) != len(first_frame_prompts):
-        if status_callback:
-            status_callback(f"Warning: LLM returned {len(vp_list)} video prompts, expected {len(first_frame_prompts)}")
+    vp_data = video_prompts["video_prompts"]
     
-    # Transform prompts: each prompt becomes {"image_prompt": "...", "video_prompt": "..."}
-    for i, loc in enumerate(locations):
+    # Match LLM output with input locations and update prompts
+    # The LLM returns video_prompts as a list of {location, prompts: [{image_prompt, video_prompt: {action, line, female_character_sound}}]}
+    # We need to merge the video_prompt data into the existing locations
+    
+    llm_location_map = {}
+    for loc_data in vp_data:
+        loc_name = loc_data.get("location", "")
+        llm_location_map[loc_name] = loc_data
+    
+    # Update each location with video_prompt data
+    for loc in locations:
+        loc_name = loc.get("location", "")
         prompts = loc.get("prompts", [])
         if not prompts:
             continue
         
-        # Find corresponding video prompts for this location
-        loc_vp_count = len(prompts)
-        loc_vps = vp_list[i:i+loc_vp_count] if i < len(vp_list) else []
+        # Find corresponding LLM data for this location
+        llm_loc_data = llm_location_map.get(loc_name)
         
-        for j, prompt in enumerate(prompts):
-            if j < len(loc_vps):
-                vp = loc_vps[j]
-                # Combine action + line + audio + female_character_sound into video_prompt
-                video_prompt = " ".join([
-                    vp.get("action", ""),
-                    vp.get("line", ""),
-                    vp.get("audio", ""),
-                    vp.get("female_character_sound", "")
-                ])
-                if isinstance(prompt, dict):
-                    # Z mode: transform dict
-                    prompt["video_prompt"] = video_prompt
+        if llm_loc_data and "prompts" in llm_loc_data:
+            llm_prompts = llm_loc_data["prompts"]
+            for j, prompt in enumerate(prompts):
+                if j < len(llm_prompts):
+                    llm_prompt = llm_prompts[j]
+                    video_prompt_data = llm_prompt.get("video_prompt", {})
+                    llm_image_prompt = llm_prompt.get("image_prompt", "")
+                    
+                    if isinstance(prompt, dict):
+                        # Z mode: update existing dict
+                        prompt["image_prompt"] = llm_image_prompt or prompt.get("image_prompt", prompt.get("prompt", ""))
+                        prompt["video_prompt"] = video_prompt_data
+                    else:
+                        # Tag mode: transform to dict
+                        prompts[j] = {
+                            "image_prompt": llm_image_prompt or prompt,
+                            "video_prompt": video_prompt_data
+                        }
                 else:
-                    # Tag mode: transform to dict
-                    prompts[j] = {
-                        "image_prompt": prompt,
-                        "video_prompt": video_prompt
-                    }
-            else:
-                # No video prompt from LLM, use image prompt as video prompt
+                    # No video prompt from LLM, use placeholder
+                    if isinstance(prompt, dict):
+                        if "image_prompt" not in prompt:
+                            prompt["image_prompt"] = prompt.get("prompt", "")
+                        prompt["video_prompt"] = {"action": "", "line": "", "female_character_sound": ""}
+                    else:
+                        prompts[j] = {
+                            "image_prompt": prompt,
+                            "video_prompt": {"action": "", "line": "", "female_character_sound": ""}
+                        }
+        else:
+            # No matching location in LLM output, use placeholder
+            for j, prompt in enumerate(prompts):
                 if isinstance(prompt, dict):
                     if "image_prompt" not in prompt:
                         prompt["image_prompt"] = prompt.get("prompt", "")
-                    prompt["video_prompt"] = prompt.get("image_prompt", "")
+                    prompt["video_prompt"] = {"action": "", "line": "", "female_character_sound": ""}
                 else:
                     prompts[j] = {
                         "image_prompt": prompt,
-                        "video_prompt": prompt
+                        "video_prompt": {"action": "", "line": "", "female_character_sound": ""}
                     }
     
     return locations
@@ -656,7 +806,7 @@ def run_mock_workflow(user_requirements: str, status_callback=None, stop_event=N
 
     task_path = os.path.join(job_dir, "task.json")
     with open(task_path, 'w', encoding='utf-8') as f:
-        json.dump(result, f, indent=4)
+        json.dump(result, f, indent=4, ensure_ascii=False)
 
     if status_callback:
         status_callback(f"[MOCK] Saved to: {task_path}")

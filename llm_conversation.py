@@ -251,14 +251,24 @@ class LLMUtils:
                         logger.info("[CHAT] No tool calls, validating as plain JSON")
                         try:
                             json_to_parse = full_json_content if full_json_content.strip() else full_response
-                            # If LLM refused then retried with valid JSON, extract only the retry JSON
-                            if "{" in json_to_parse:
-                                last_brace = json_to_parse.rfind("{")
-                                json_to_parse = json_to_parse[last_brace:]
-                            elif "[" in json_to_parse:
-                                last_bracket = json_to_parse.rfind("[")
-                                json_to_parse = json_to_parse[last_bracket:]
-                            parsed_json = json.loads(json_to_parse)
+                            # First try: parse the full content directly
+                            try:
+                                parsed_json = json.loads(json_to_parse)
+                            except json.JSONDecodeError:
+                                # Second try: LLM may have output refusal text + retry JSON
+                                # Find the FIRST { or [ to extract the JSON block
+                                brace_idx = json_to_parse.find("{")
+                                bracket_idx = json_to_parse.find("[")
+                                if brace_idx >= 0 and bracket_idx >= 0:
+                                    start = min(brace_idx, bracket_idx)
+                                elif brace_idx >= 0:
+                                    start = brace_idx
+                                elif bracket_idx >= 0:
+                                    start = bracket_idx
+                                else:
+                                    raise json.JSONDecodeError("No JSON delimiter found", json_to_parse, 0)
+                                json_to_parse = json_to_parse[start:]
+                                parsed_json = json.loads(json_to_parse)
                             val_err = LLMUtils._validate_schema(parsed_json, conversation.tool_schema)
                             if val_err:
                                 validation_error = val_err

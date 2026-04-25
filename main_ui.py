@@ -1400,9 +1400,12 @@ class VideoGenerationApp:
             log_text = self.new_log_window.get("1.0", tk.END)
             self.new_log_window.configure(state='disabled')
             if log_text.strip():
-                self.root.clipboard_empty()
+                self.root.clipboard_clear()
                 self.root.clipboard_append(log_text)
-                self.root.update()  # needed so clipboard stays after window closes
+                self.root.update()
+                self.root.after(0, lambda: self.new_status_var.set("Log copied to clipboard"))
+            else:
+                self.root.after(0, lambda: self.new_status_var.set("Log is empty"))
         except Exception as e:
             self.root.after(0, lambda: self.new_status_var.set(f"Error copying log: {e}"))
 

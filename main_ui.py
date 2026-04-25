@@ -56,6 +56,7 @@ STATE_FILE = os.path.join(SCRIPT_DIR, "main_ui_state.json")
 COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://192.168.4.22:8188/prompt")
 
 from llm_utils import LLMUtils
+from comfyui_image_utils import download_image_from_comfyui, wait_for_execution
 
 # --- LTX Project Paths ---
 LTX_PROJECT_DIR = os.path.join(SCRIPT_DIR, "projects", "ltx")
@@ -179,7 +180,7 @@ class VideoGenerationApp:
         self.video_tab = tk.Frame(self.main_notebook)
         self.main_notebook.add(self.video_tab, text="Video")
         from video_tab import create_video_tab
-        self.video_tab_ui = create_video_tab(self.main_notebook, self.root)
+        self.video_tab_ui = create_video_tab(self.video_tab, self.root)
 
         # --- WAN UI ---
         wan_top = tk.Frame(wan_tab); wan_top.pack(fill=tk.X, pady=5)
@@ -461,17 +462,19 @@ class VideoGenerationApp:
         threading.Thread(target=self._run_processing_thread, args=(sel_task, configs), daemon=True).start()
 
     def wait_for_completion(self, prompt_id, timeout=3600):
-        start_time = time.time(); hist_url = COMFYUI_URL.replace("/prompt", f"/history/{prompt_id}")
-        while time.time() - start_time < timeout:
-            if self.cancel_event.is_set(): return 'cancelled'
-            try:
-                resp = requests.get(hist_url, timeout=10)
-                if resp.ok:
-                    data = resp.json()
-                    if prompt_id in data: return data[prompt_id]
-            except: pass
-            time.sleep(5)
-        return None
+        """Wait for a ComfyUI workflow to complete.
+        
+        Uses WebSocket for real-time detection, with HTTP polling as fallback.
+        Returns the history entry dict, or 'cancelled' if user cancelled.
+        """
+        # Use the new WebSocket-based waiter from comfyui_image_utils
+        result = wait_for_execution(
+            comfyui_url=COMFYUI_URL,
+            prompt_id=prompt_id,
+            cancel_event=self.cancel_event if hasattr(self, 'cancel_event') else None,
+            timeout=timeout
+        )
+        return result
 
     def cancel_processing(self):
         if self.is_running: self.log("--- Cancellation requested ---"); self.cancel_event.set()
@@ -1255,8 +1258,11 @@ class VideoGenerationApp:
 
     def _discover_and_save_image_with_metadata(self, history, filename_prefix, location, prompt_label, progress_label):
         """
-        Discover the generated image from ComfyUI history, inject metadata,
-        and save it locally with prompts embedded.
+        Discover the generated image from ComfyUI history, download it via
+        the /view API, inject metadata, and save it locally.
+        
+        This method downloads images from a remote ComfyUI server using the
+        /view endpoint instead of trying to read from a local filesystem path.
         
         Args:
             history: The ComfyUI history response dict
@@ -1277,6 +1283,7 @@ class VideoGenerationApp:
             outputs = history.get("outputs", {})
             image_filename = None
             image_subfolder = None
+            image_type = "output"
             
             for node_id, node_output in outputs.items():
                 if "images" in node_output:
@@ -1284,6 +1291,7 @@ class VideoGenerationApp:
                         if img_info.get("type") == "output":
                             image_filename = img_info.get("filename")
                             image_subfolder = img_info.get("subfolder", "")
+                            image_type = img_info.get("type", "output")
                             break
                 if image_filename:
                     break
@@ -1291,10 +1299,19 @@ class VideoGenerationApp:
             if not image_filename:
                 return None
             
-            # Construct full path to the image in ComfyUI output
-            image_path = os.path.join(COMFYUI_ROOT, "output", image_subfolder, image_filename)
+            # Extract server address from COMFYUI_URL
+            # e.g., "http://192.168.4.22:8188/prompt" -> "192.168.4.22:8188"
+            server_address = COMFYUI_URL.split("//")[1].split("/")[0]
             
-            if not os.path.exists(image_path):
+            # Download the image via ComfyUI's /view API (not local filesystem)
+            image_data = download_image_from_comfyui(
+                server_address=server_address,
+                filename=image_filename,
+                subfolder=image_subfolder,
+                folder_type=image_type
+            )
+            
+            if not image_data:
                 return None
             
             # Extract prompts from location
@@ -1335,7 +1352,8 @@ class VideoGenerationApp:
             # Inject metadata into PNG file
             metadata_str = json.dumps(metadata, ensure_ascii=False)
             
-            img = PILImage.open(image_path)
+            # Decode image from bytes using PIL
+            img = PILImage.open(io.BytesIO(image_data))
             
             # Convert to RGBA if needed for PNG
             if img.mode not in ("RGB", "RGBA", "L"):

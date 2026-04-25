@@ -281,8 +281,10 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
     scene_response = ""
     for chunk in llm.chat(conv2, "Design the scene based on the characters and requirements.", chat_mode="json", max_retries=2):
         scene_response += chunk
-        if status_callback:
-            status_callback(chunk, end="")
+        # Z mode: only show final tool call, suppress stream chunks
+        if mode != "Z":
+            if status_callback:
+                status_callback(chunk, end="")
 
     if status_callback:
         status_callback("\n")

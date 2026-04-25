@@ -113,7 +113,7 @@ Conversation(
 
 **Parameters:**
 - `system_prompt`: System prompt string
-- `tool_schema`: JSON schema for tool/function calling (OpenAI format)
+- `tool_schema`: JSON schema for tool/function calling (OpenAI format). Accepts either a `dict` or a `list` of schemas. Both formats are automatically normalized to a list internally.
 
 #### Methods
 
@@ -226,7 +226,7 @@ llm = LLMUtils(
 
 ### Example 3: Tool Schema Format
 
-The tool schema follows OpenAI's function calling format:
+The tool schema follows OpenAI's function calling format. **All schema JSON files should be wrapped in an outer array** `[...]` containing one or more function definitions:
 
 ```python
 tool_schema = [
@@ -253,6 +253,8 @@ tool_schema = [
     }
 ]
 ```
+
+**Note:** The `Conversation` class automatically normalizes both dict and list schema formats, so passing a bare `{ "type": "function", ... }` dict will work. However, for consistency, all schema JSON files should use the outer array format `[ {...} ]`.
 
 ---
 

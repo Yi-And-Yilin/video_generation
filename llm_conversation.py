@@ -110,7 +110,7 @@ class LLMUtils:
 
                 if chat_mode == "json" and conversation.tool_schema:
                     payload["format"] = "json"
-                    if isinstance(conversation.tool_schema, list) and len(conversation.tool_schema) > 0:
+                    if len(conversation.tool_schema) > 0:
                         tools = []
                         for fd in conversation.tool_schema:
                             func = fd.get("function", {})
@@ -412,7 +412,11 @@ class LLMUtils:
 class Conversation:
     def __init__(self, system_prompt: str, tool_schema: Optional[List[Dict] | Dict] = None):
         self.system_prompt = system_prompt
-        self.tool_schema = tool_schema
+        # Normalize tool_schema to always be a list for consistency
+        if isinstance(tool_schema, dict):
+            self.tool_schema = [tool_schema]
+        else:
+            self.tool_schema = tool_schema
         self.messages: List[Dict[str, Any]] = []
 
     def add_user_message(self, content: str):

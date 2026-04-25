@@ -20,6 +20,10 @@ WAN_WORKFLOW_BASE = os.path.join(os.path.dirname(SCRIPT_DIR), "wan", "workflow")
 WAN_WORKFLOW_IMAGE_DIR = os.path.join(WAN_WORKFLOW_BASE, "image")
 WAN_WORKFLOW_VIDEO_DIR = os.path.join(WAN_WORKFLOW_BASE, "video")
 
+# LTX video workflow base directory (workflows/video/) — new modular workflow templates
+# From projects/ltx/, go up two levels to project root, then into workflows/video/
+LTX_WORKFLOW_BASE = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "workflows", "video")
+
 
 def _resolve_wan_template_path(template_name: str) -> Optional[str]:
     """
@@ -135,7 +139,7 @@ def generate_workflow_from_standard_params(template: str, params: Dict[str, Any]
     if type == "image":
         template = "wan_image"
     else:
-        template_dir = os.path.join(SCRIPT_DIR, "workflow", type)
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "workflows", "video")
 
     if type == "image":
         # Use the new subfolder-aware resolver for wan_image
@@ -247,11 +251,11 @@ def generate_workflow_for_ltx_video(task_path: str, resolution: str = "1280*720"
 
     template_map = {
         "prep": "ltx_preparation",
-        "encode": "ltx-text-encoding",
-        "sampling": "ltx_sampling",
-        "decode": "ltx_latent",
+        "encode": "ltx_preparation",
+        "sampling": "ltx_1st_sampling",
+        "decode": "ltx_decode",
     }
-    template = template_map.get(step, "ltx_sampling")
+    template = template_map.get(step, "ltx_preparation")
 
     return generate_workflow_from_standard_params(
         template=template,
@@ -421,7 +425,7 @@ def generate_api_workflow(
         if template_path is None:
             raise ValueError(f"Failed to resolve wan_image template in projects/wan/workflow/")
     elif template_dir is None:
-        template_dir = os.path.join(SCRIPT_DIR, "workflow", type)
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "workflows", "video")
         template_path = os.path.join(template_dir, f"{template}.json")
     else:
         template_path = os.path.join(template_dir, f"{template}.json")

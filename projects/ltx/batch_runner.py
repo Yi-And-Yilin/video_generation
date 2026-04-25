@@ -7,20 +7,24 @@ Execution Flow:
     ├── Run cleanup workflow -> creates {job_id}-1.txt
     └── Wait for cleanup completion
 
-    Phase 2: TEXT ENCODING
-    ├── For each task: generate workflow -> send to ComfyUI
+    Phase 2: PREPARATION (Image preprocess + text encoding + latent creation)
+    ├── For each task: generate ltx_preparation workflow -> send to ComfyUI
     ├── Run cleanup workflow -> creates {job_id}-2.txt
     └── Wait for cleanup completion
 
-    Phase 3: SAMPLING
-    ├── For each task: generate workflow -> send to ComfyUI
-    ├── Wait for all latents complete
+    Phase 3: SAMPLING (3-step: 1st sampling → upscale → 2nd sampling)
+    ├── Step 3a: Generate ltx_1st_sampling workflow -> send to ComfyUI
+    │   └── Wait for step1 latents (video_{work_id}*.latent, audio_{work_id}*.latent)
+    ├── Step 3b: Generate ltx_upscale workflow -> send to ComfyUI
+    │   └── Wait for upscaled latents
+    ├── Step 3c: Generate ltx_2nd_sampling workflow -> send to ComfyUI
+    │   └── Wait for final latents (LTXV_AV_*.latent)
     ├── Delete image files from output/
     ├── Run cleanup workflow -> creates {job_id}-3.txt
     └── Wait for cleanup completion
 
-    Phase 4: LATENT DECODE
-    ├── For each task: generate workflow -> send to ComfyUI
+    Phase 4: LATENT DECODE (LTXV)
+    ├── For each task: generate ltx_decode workflow -> send to ComfyUI
     ├── Delete consumed latents
     ├── Run cleanup workflow -> creates {job_id}-4.txt
     └── Wait for cleanup completion
@@ -321,23 +325,23 @@ class BatchRunner:
         succeeded_work_ids = [t['work_id'] for t in tasks if t['work_id'] not in result['failed']]
         self.log(f"Phase 1 complete. {len(succeeded_work_ids)}/{len(tasks)} images generated.")
         
-        # ========== PHASE 2: TEXT ENCODING ==========
+        # ========== PHASE 2: PREPARATION (Image preprocess + text encoding + latent creation) ==========
         self.log("=" * 50)
-        self.log("PHASE 2: TEXT ENCODING")
+        self.log("PHASE 2: PREPARATION")
         self.log("=" * 50)
-        
+
         for task in tasks:
             work_id = task.get('work_id')
             if work_id in result['failed']:
                 continue
-            
+
             prompt = task.get('prompt', '')
-            
+
             try:
                 workflow = generate_api_workflow(
                     project="ltx",
                     type="video",
-                    template="ltx-text-encoding",
+                    template="ltx_preparation",
                     acts=[],
                     width=width,
                     height=height,
@@ -346,17 +350,17 @@ class BatchRunner:
                     video_pos_prompt=task.get("video_pos_prompt", ""),
                     work_id=work_id
                 )
-                
+
                 prompt_id = self.send_workflow_to_comfyui(workflow, work_id)
                 if not prompt_id:
                     result['failed'].append(work_id)
-                    result['errors'].append({'work_id': work_id, 'phase': 'text_encoding', 'error': 'Failed to queue'})
-                    
+                    result['errors'].append({'work_id': work_id, 'phase': 'preparation', 'error': 'Failed to queue'})
+
             except Exception as e:
-                self.log(f"Error generating text encoding workflow for {work_id}: {e}")
+                self.log(f"Error generating preparation workflow for {work_id}: {e}")
                 result['failed'].append(work_id)
-                result['errors'].append({'work_id': work_id, 'phase': 'text_encoding', 'error': str(e)})
-        
+                result['errors'].append({'work_id': work_id, 'phase': 'preparation', 'error': str(e)})
+
         # Run cleanup and wait for Phase 2 completion
         if not self.run_cleanup(job_id, self.STEP_TEXT_ENCODING):
             self.log("Phase 2 cleanup failed or cancelled")
@@ -368,25 +372,27 @@ class BatchRunner:
         
         self.log(f"Phase 2 complete. {len([t for t in tasks if t['work_id'] not in result['failed']])} text encodings done.")
         
-        # ========== PHASE 3: SAMPLING ==========
+        # ========== PHASE 3: SAMPLING (3-step: 1st sampling → upscale → 2nd sampling) ==========
         self.log("=" * 50)
-        self.log("PHASE 3: SAMPLING")
+        self.log("PHASE 3: SAMPLING (3-step)")
         self.log("=" * 50)
-        
+
+        # --- Step 3a: 1st Sampling (ltx_1st_sampling) ---
+        self.log("Phase 3a: 1st Sampling...")
         for task in tasks:
             work_id = task.get('work_id')
             if work_id in result['failed']:
                 continue
-            
+
             main_sex_act = task.get('main_sex_act', '')
             prompt = task.get('prompt', '')
             acts = [main_sex_act] if main_sex_act else []
-            
+
             try:
                 workflow = generate_api_workflow(
                     project="ltx",
                     type="video",
-                    template="ltx_sampling",
+                    template="ltx_1st_sampling",
                     acts=acts,
                     width=width,
                     height=height,
@@ -395,72 +401,170 @@ class BatchRunner:
                     video_pos_prompt=task.get("video_pos_prompt", ""),
                     work_id=work_id
                 )
-                
+
                 prompt_id = self.send_workflow_to_comfyui(workflow, work_id)
                 if not prompt_id:
                     result['failed'].append(work_id)
-                    result['errors'].append({'work_id': work_id, 'phase': 'sampling', 'error': 'Failed to queue'})
-                    
+                    result['errors'].append({'work_id': work_id, 'phase': '1st_sampling', 'error': 'Failed to queue'})
+
             except Exception as e:
-                self.log(f"Error generating sampling workflow for {work_id}: {e}")
+                self.log(f"Error generating 1st sampling workflow for {work_id}: {e}")
                 result['failed'].append(work_id)
-                result['errors'].append({'work_id': work_id, 'phase': 'sampling', 'error': str(e)})
-        
-        # Wait for all latents to be created
-        self.log("Waiting for all latents to be created...")
+                result['errors'].append({'work_id': work_id, 'phase': '1st_sampling', 'error': str(e)})
+
+        # Wait for step1 latents to be created
+        self.log("Waiting for step1 latents to be created...")
         for task in tasks:
             work_id = task.get('work_id')
             if work_id not in result['failed']:
                 if not self.poll_for_latent_files(work_id):
                     result['failed'].append(work_id)
-                    result['errors'].append({'work_id': work_id, 'phase': 'sampling', 'error': 'Timeout waiting for latents'})
-        
+                    result['errors'].append({'work_id': work_id, 'phase': '1st_sampling', 'error': 'Timeout waiting for step1 latents'})
+
         if self.cancel_event.is_set():
-            self.log("Batch cancelled during Phase 3")
+            self.log("Batch cancelled during Phase 3a")
             return result
-        
-        # Delete image files after sampling
+
+        # --- Step 3b: Upscale (ltx_upscale) ---
+        self.log("Phase 3b: Upscale...")
+        for task in tasks:
+            work_id = task.get('work_id')
+            if work_id in result['failed']:
+                continue
+
+            main_sex_act = task.get('main_sex_act', '')
+            prompt = task.get('prompt', '')
+            acts = [main_sex_act] if main_sex_act else []
+
+            try:
+                workflow = generate_api_workflow(
+                    project="ltx",
+                    type="video",
+                    template="ltx_upscale",
+                    acts=acts,
+                    width=width,
+                    height=height,
+                    length=length,
+                    prompt=prompt,
+                    video_pos_prompt=task.get("video_pos_prompt", ""),
+                    work_id=work_id
+                )
+
+                prompt_id = self.send_workflow_to_comfyui(workflow, work_id)
+                if not prompt_id:
+                    result['failed'].append(work_id)
+                    result['errors'].append({'work_id': work_id, 'phase': 'upscale', 'error': 'Failed to queue'})
+
+            except Exception as e:
+                self.log(f"Error generating upscale workflow for {work_id}: {e}")
+                result['failed'].append(work_id)
+                result['errors'].append({'work_id': work_id, 'phase': 'upscale', 'error': str(e)})
+
+        # Wait for upscaled latents to be created
+        self.log("Waiting for upscaled latents to be created...")
+        for task in tasks:
+            work_id = task.get('work_id')
+            if work_id not in result['failed']:
+                if not self.poll_for_latent_files(work_id):
+                    result['failed'].append(work_id)
+                    result['errors'].append({'work_id': work_id, 'phase': 'upscale', 'error': 'Timeout waiting for upscaled latents'})
+
+        if self.cancel_event.is_set():
+            self.log("Batch cancelled during Phase 3b")
+            return result
+
+        # Delete image files after sampling steps
         self.log("Deleting source image files...")
         for task in tasks:
             work_id = task.get('work_id')
             if work_id not in result['failed']:
                 delete_image_files(work_id, self.output_folder, self.log)
-        
-        # Run cleanup and wait for Phase 3 completion
-        if not self.run_cleanup(job_id, self.STEP_SAMPLING):
-            self.log("Phase 3 cleanup failed or cancelled")
-            return result
-        
-        self.log(f"Phase 3 complete. {len([t for t in tasks if t['work_id'] not in result['failed']])} samplings done.")
-        
-        # ========== PHASE 4: LATENT DECODE ==========
-        self.log("=" * 50)
-        self.log("PHASE 4: LATENT DECODE")
-        self.log("=" * 50)
-        
+
+        # --- Step 3c: 2nd Sampling (ltx_2nd_sampling) ---
+        self.log("Phase 3c: 2nd Sampling...")
         for task in tasks:
             work_id = task.get('work_id')
             if work_id in result['failed']:
                 continue
-            
+
+            main_sex_act = task.get('main_sex_act', '')
+            prompt = task.get('prompt', '')
+            acts = [main_sex_act] if main_sex_act else []
+
             try:
                 workflow = generate_api_workflow(
                     project="ltx",
                     type="video",
-                    template="ltx_latent",
+                    template="ltx_2nd_sampling",
+                    acts=acts,
+                    width=width,
+                    height=height,
+                    length=length,
+                    prompt=prompt,
+                    video_pos_prompt=task.get("video_pos_prompt", ""),
+                    work_id=work_id
+                )
+
+                prompt_id = self.send_workflow_to_comfyui(workflow, work_id)
+                if not prompt_id:
+                    result['failed'].append(work_id)
+                    result['errors'].append({'work_id': work_id, 'phase': '2nd_sampling', 'error': 'Failed to queue'})
+
+            except Exception as e:
+                self.log(f"Error generating 2nd sampling workflow for {work_id}: {e}")
+                result['failed'].append(work_id)
+                result['errors'].append({'work_id': work_id, 'phase': '2nd_sampling', 'error': str(e)})
+
+        # Wait for final latents to be created
+        self.log("Waiting for final latents to be created...")
+        for task in tasks:
+            work_id = task.get('work_id')
+            if work_id not in result['failed']:
+                if not self.poll_for_latent_files(work_id):
+                    result['failed'].append(work_id)
+                    result['errors'].append({'work_id': work_id, 'phase': '2nd_sampling', 'error': 'Timeout waiting for final latents'})
+
+        if self.cancel_event.is_set():
+            self.log("Batch cancelled during Phase 3c")
+            return result
+
+        # Run cleanup and wait for Phase 3 completion
+        if not self.run_cleanup(job_id, self.STEP_SAMPLING):
+            self.log("Phase 3 cleanup failed or cancelled")
+            return result
+
+        self.log(f"Phase 3 complete. {len([t for t in tasks if t['work_id'] not in result['failed']])} samplings done.")
+        
+        # ========== PHASE 4: LATENT DECODE (LTXV) ==========
+        self.log("=" * 50)
+        self.log("PHASE 4: LATENT DECODE")
+        self.log("=" * 50)
+
+        for task in tasks:
+            work_id = task.get('work_id')
+            if work_id in result['failed']:
+                continue
+
+            try:
+                workflow = generate_api_workflow(
+                    project="ltx",
+                    type="video",
+                    template="ltx_decode",
                     acts=[],
                     width=width,
                     height=height,
                     length=length,
                     fps=fps,
-                    work_id=work_id
+                    work_id=work_id,
+                    latent_in=f"latents\\LTXV_AV_00001_.latent",
+                    output=f"video/{work_id}"
                 )
-                
+
                 prompt_id = self.send_workflow_to_comfyui(workflow, work_id)
                 if not prompt_id:
                     result['failed'].append(work_id)
                     result['errors'].append({'work_id': work_id, 'phase': 'latent_decode', 'error': 'Failed to queue'})
-                    
+
             except Exception as e:
                 self.log(f"Error generating latent decode workflow for {work_id}: {e}")
                 result['failed'].append(work_id)

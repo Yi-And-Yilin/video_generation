@@ -1,4 +1,4 @@
-# WAN Workflow Technical Documentation (v2.1 - Dynamic Placeholder Pattern)
+# WAN Workflow Technical Documentation (v2.2 - Unified Workflow Selector)
 
 本手册记录了 `main_ui.py` 中 WAN 多步骤生成流水线的完整系统架构。**v2.1 版本引入了 `**XXX**` 占位符模式，简化了动态工作流生成逻辑。**
 
@@ -199,6 +199,145 @@ for k, v in inputs.items():
 - **超分视频**: `{jid}_upscaled_*.mp4`
 - **位置**: `output/video/`
 
+## 4.5 Standard Workflow Interface (StandardWorkflowParams)
+
+### Overview
+`StandardWorkflowParams` is a canonical dataclass in `projects/ltx/parameter_extraction.py` that serves as the single source of truth for all workflow parameter exchange. It covers ALL placeholder names from ALL ComfyUI workflow templates (WAN 2.1, WAN 2.2, LTX, SDXL/wan_image).
+
+### Dataclass Structure
+The dataclass organizes fields into logical categories:
+
+| Category | Fields |
+|----------|--------|
+| Identifiers | `job_id`, `work_id`, `row_id` |
+| Dimensions | `width`, `height`, `video_width`, `video_height` |
+| Temporal | `length`, `fps`, `seconds`, `video_seconds` |
+| Prompts | `prompt`, `image_pos_prompt`, `video_pos_prompt`, `image_neg_prompt`, `negative_prompt`, `audio_prompt` |
+| Conditioning | `save_pos_conditioning`, `save_neg_conditioning`, `load_pos_conditioning`, `load_neg_conditioning` |
+| Latents | `save_latent`, `load_latent`, `video_latent`, `audio_latent` |
+| Images/Videos | `image`, `load_image`, `save_video`, `save_image` |
+| Random/Seed | `random_number` (auto-generated 1-15 digit int) |
+| LoRA | `lora1..5_name`, `lora1..5_strength` (defaults: `xl\add-detail.safetensors` at `0.0`) |
+| Checkpoint | `checkpoint` (default: `pornmaster_proSDXLV8.safetensors`) |
+| Metadata | `category`, `sex_loras`, `main_sex_act`, `character_male_name`, `character_female_name`, `location_name`, `scene_index` |
+
+### Key Methods
+The dataclass provides typed dict subsets for each workflow template:
+
+| Method | Workflow | Key Fields |
+|--------|----------|------------|
+| `for_wan_image()` | SDXL image generation | `checkpoint`, `video_width/height`, `image_pos_prompt`, `lora1..5`, `save_video` |
+| `for_wan_video_step0()` | WAN 2.2 Step 0 (img2vid prep) | `video_width/height/seconds`, `video_pos_prompt`, `load_image`, conditioning/latent saves |
+| `for_wan_video_step1()` | WAN 2.2 Step 1 | conditioning loads, `random_number`, latent load/save |
+| `for_wan_video_step2()` | WAN 2.2 Step 2 | conditioning loads, `random_number`, latent load/save |
+| `for_wan_video_step3()` | WAN 2.2 Step 3 (decode) | `save_video`, `load_latent` |
+| `for_ltx_sampling()` | LTX sampling (1st) | `prompt`, dimensions, `length`, LoRA, conditioning |
+| `for_ltx_preparation()` | LTX preparation | `prompt`, dimensions, `length`, image, conditioning saves, latent creation |
+| `for_ltx_latent_decode()` | LTX latent decode | `video_latent`, `audio_latent`, `save_video`, `fps` |
+
+Each method uses fallbacks (e.g., `video_pos_prompt or self.prompt`) to ensure fields are populated.
+
+### New Tab "Run ComfyUI" Flow
+The New tab's "Run ComfyUI" button uses the following pipeline:
+
+```
+1. User clicks "Run ComfyUI" → reads task.json from New tab directory
+2. Calls extract_params_from_new_tab_task(task_path, scene_index, resolution)
+   → Returns StandardWorkflowParams
+3. Calls params.for_wan_image() → Dict[str, Any] for SDXL workflow
+4. Calls generate_workflow_from_standard_params(template, params_dict, type="image", acts=...)
+   → Applies LoRA lookup, placeholder replacement, returns workflow JSON
+5. Sends workflow JSON to ComfyUI API
+```
+
+### Utility Functions
+- `to_dict()` → flat dict for `workflow_generator.py` compatibility
+- `from_dict(data)` → create instance from partial/full dict
+- `merge(**kwargs)` → return new instance with overridden fields
+
+---
+
+## 4.6 Unified Workflow Selector System (v2.2)
+
+The unified workflow selector system centralizes template discovery, loading, and placeholder substitution for all ComfyUI workflows.
+
+### 4.6.1 `TemplateCatalog` Class
+
+**File:** `workflow_selector.py`, line 25
+
+`TemplateCatalog` provides static methods for scanning and loading workflow templates:
+
+| Method | Description |
+|--------|-------------|
+| `get_wan_workflow_options()` | Scans `projects/wan/workflow/` (root, `image/`, `video/`), returns sorted list with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `wan_image`, then alphabetical) |
+| `load_template(template_key)` | Loads and parses `{template_key}.json` by searching root, `image/`, and `video/` subfolders |
+| `get_prompt_template_options()` | Scans `projects/ltx/prompts/*.md` (excluding `user-prompt.md`) |
+| `get_image_task_options()` | Scans `projects/ltx/tasks/*.json`, returns reverse-chronological sorted filenames |
+| `get_task_steps_from_csv(task_name)` | Reads `task_steps.csv` and returns `(workflow_name, save_video, category)` tuples |
+| `get_csv_task_names()` | Returns sorted unique task names from `task_steps.csv` |
+
+### 4.6.2 `apply_placeholders_unified()` Function
+
+**File:** `workflow_selector.py`, line 35
+
+Replaces `**placeholder**` tokens in workflow JSON with actual values:
+
+```python
+workflow = TemplateCatalog.load_template("wan_image")
+params_dict = params.for_wan_image()  # Dict[str, Any]
+workflow = apply_placeholders_unified(workflow, params_dict)
+```
+
+**Type conversion rules:**
+- If `class_type` is `"JWInteger"` or placeholder name contains `strength`, `seed`, `random`, `width`, `height`, or `fps` → converts to `float` or `int`
+- Otherwise → string replacement
+
+### 4.6.3 How It Replaces Per-Tab Loading Logic
+
+**Before (per-template branching in `main_ui.py`):**
+
+```python
+# Old: each template had its own loading branch
+if template == "wan_2.2_step0":
+    workflow = load_wan_step0()
+    workflow = apply_placeholders_step0(workflow, params)
+elif template == "wan_2.2_step1":
+    workflow = load_wan_step1()
+    workflow = apply_placeholders_step1(workflow, params)
+# ... many more elif branches
+```
+
+**After (unified via TemplateCatalog):**
+
+```python
+# New: single load + unified placeholder application
+workflow = TemplateCatalog.load_template(selected_template)
+params_dict = params.for_wan_image()  # or other template-specific method
+params_dict.update(resolve_lora_params(...))
+workflow = apply_placeholders_unified(workflow, params_dict)
+```
+
+This eliminates the per-template `elif` branches and provides a consistent interface for all workflow templates, including the new category-specific variants (e.g., `wan_2.1_step1_masturbation`, `wan_2.1_step1_missionary`).
+
+### 4.6.4 Integration with New Tab "Run ComfyUI"
+
+The New tab uses the selector system as follows:
+
+```
+User clicks "Run ComfyUI"
+    → Read selected_template from ComfyUI dropdown (default: "wan_image")
+    → If "wan_image":
+        workflow = generate_workflow_for_wan_image(task_path, scene_index, resolution, prompt_index)
+    → Else:
+        params = extract_params_from_new_tab_task(task_path, scene_index, resolution, prompt_index)
+        params_dict = dict(params.for_wan_image())
+        lora_resolved = _resolve_lora_params(...)
+        params_dict.update(lora_resolved)
+        workflow = TemplateCatalog.load_template(selected_template)
+        workflow = apply_placeholders_unified(workflow, params_dict)
+    → Send workflow to ComfyUI
+```
+
 ---
 
 ## 5. 发现与记录逻辑 (Discovery & Tracking)
@@ -329,7 +468,7 @@ DEBUG: Processing job h1k8ba...
 
 ---
 
-*文档版本：2.2 | 最后更新：2026-04-23 | 对应代码：main_ui.py, workflow_generator.py*
+*文档版本：2.3 | 最后更新：2026-04-24 | 对应代码：main_ui.py, workflow_selector.py, workflow_generator.py*
 
 **关键变更**: v2.1 从 class_type-based 识别改为 `**XXX**` 占位符模式，简化了节点识别和参数注入逻辑。
 

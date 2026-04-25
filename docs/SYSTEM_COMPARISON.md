@@ -292,7 +292,7 @@ User Instruction → Combine with Template → LLM (Qwen3.5) → Structured JSON
 2. **Image Tab:** Select task JSON, execute image generation using `wan_image.json` template with unified `**XXX**` placeholder protocol
 3. **Video Generation:** Use generated images as first frames for LTX-2 video generation
 
-**Unified Protocol:** Image Tab now shares the same `_apply_placeholders` engine as WAN Tab. LTX templates (`ltx_sampling.json`, `ltx-text-encoding.json`, `ltx_latent.json`) use WAN-style naming (`**load_pos_conditioning**`, `**save_pos_conditioning**`, etc.) for cross-tab compatibility.
+**Unified Protocol:** Image Tab now shares the same `_apply_placeholders` engine as WAN Tab. LTX templates (`ltx_preparation.json`, `ltx_1st_sampling.json`, `ltx_upscale.json`, `ltx_2nd_sampling.json`, `ltx_decode.json`) use WAN-style naming (`**placeholder**`) for cross-tab compatibility.
 
 ### 3.6 Strengths & Limitations
 

@@ -399,9 +399,9 @@ new_tab_run_ltx_video_generation() [main_ui.py]
     ↓
 BatchRunner.run_batch() [projects/ltx/batch_runner.py]
     ↓ Phase 1: Image generation (via wan_image workflow)
-    ↓ Phase 2: Text encoding (ltx-text-encoding)
-    ↓ Phase 3: Sampling (ltx_sampling) — uses video_pos_prompt for conditioning
-    ↓ Phase 4: Latent decode (ltx_latent) — decodes final video
+    ↓ Phase 2: Preparation (ltx_preparation) — image preprocess + text encoding + latent creation
+    ↓ Phase 3: Sampling (3-step: ltx_1st_sampling → ltx_upscale → ltx_2nd_sampling)
+    ↓ Phase 4: Latent decode (ltx_decode) — decodes final video to MP4
     ↓
 Final MP4 videos in ComfyUI output folder
 ```
@@ -448,9 +448,11 @@ Called after ComfyUI image generation completes. Reads `new_tab_last_job_id` to 
 | Phase | Purpose | Template | Notes |
 |-------|---------|----------|-------|
 | Phase 1 | Image generation | `wan_image` | Uses `prompt` field for positive prompt, generates reference images |
-| Phase 2 | Text encoding | `ltx-text-encoding` | Extracts conditioning latents using `video_pos_prompt` |
-| Phase 3 | Sampling | `ltx_sampling` | Generates video latents with `video_pos_prompt` for conditioning |
-| Phase 4 | Latent decode | `ltx_latent` | Decodes final video frames to MP4 |
+| Phase 2 | Preparation | `ltx_preparation` | Image preprocess + text encoding + latent creation (combines old text encoding + prep) |
+| Phase 3a | 1st Sampling | `ltx_1st_sampling` | First pass sampling at base resolution with LoRA |
+| Phase 3b | Upscale | `ltx_upscale` | Spatial upscaling via latent upscaler + I2V re-encoding |
+| Phase 3c | 2nd Sampling | `ltx_2nd_sampling` | Final sampling at upscaled resolution |
+| Phase 4 | Latent decode | `ltx_decode` | VAE decode + audio decode → final MP4 video |
 
 **Configuration defaults:**
 - Width: 1280px
@@ -597,10 +599,16 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 │  │                                                            │         │
 │  │ BatchRunner.run_batch() — 4-phase pipeline:              │         │
 │  │   Phase 1: Image generation  (wan_image)                 │         │
-│  │   Phase 2: Text encoding     (ltx-text-encoding)         │         │
-│  │   Phase 3: Sampling          (ltx_sampling,              │         │
-│  │                              video_pos_prompt conditioning)│       │
-│  │   Phase 4: Latent decode     (ltx_latent → MP4)          │         │
+│  │   Phase 2: Preparation       (ltx_preparation)           │         │
+│  │                              Image preprocess + text     │         │
+│  │                              encoding + latent creation  │         │
+│  │   Phase 3: Sampling          (3-step pipeline)           │         │
+│  │   ┌─ Step 3a: 1st sampling  (ltx_1st_sampling)          │         │
+│  │   ├─ Step 3b: Upscale       (ltx_upscale)               │         │
+│  │   └─ Step 3c: 2nd sampling  (ltx_2nd_sampling)          │         │
+│  │                              Uses video_pos_prompt for   │         │
+│  │                              conditioning throughout     │         │
+│  │   Phase 4: Latent decode     (ltx_decode → MP4)          │         │
 │  │                                                            │         │
 │  │ Config: 1280x720, 241 frames, 24fps                      │         │
 │  │ Log: [LTX] prefix in New Tab log panel                   │         │

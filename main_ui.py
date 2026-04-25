@@ -60,7 +60,7 @@ from llm_utils import LLMUtils
 # --- LTX Project Paths ---
 LTX_PROJECT_DIR = os.path.join(SCRIPT_DIR, "projects", "ltx")
 LTX_PROMPTS_DIR = os.path.join(LTX_PROJECT_DIR, "prompts")
-LTX_WORKFLOW_DIR = os.path.join(LTX_PROJECT_DIR, "workflow")
+LTX_WORKFLOW_DIR = os.path.join(SCRIPT_DIR, "workflows", "video")
 LTX_PROCESS_FILE = os.path.join(LTX_PROJECT_DIR, "process.json")
 LTX_LOG_FILE = os.path.join(LTX_PROJECT_DIR, "ltx.log")
 LTX_TASK_JSON = os.path.join(LTX_PROJECT_DIR, "task.json")
@@ -174,6 +174,12 @@ class VideoGenerationApp:
         # Image Tab
         self.image_tab = tk.Frame(self.main_notebook)
         self.main_notebook.add(self.image_tab, text="Image")
+
+        # --- Video Tab ---
+        self.video_tab = tk.Frame(self.main_notebook)
+        self.main_notebook.add(self.video_tab, text="Video")
+        from video_tab import create_video_tab
+        self.video_tab_ui = create_video_tab(self.main_notebook, self.root)
 
         # --- WAN UI ---
         wan_top = tk.Frame(wan_tab); wan_top.pack(fill=tk.X, pady=5)

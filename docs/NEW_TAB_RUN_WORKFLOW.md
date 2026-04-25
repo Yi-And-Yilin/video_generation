@@ -148,9 +148,15 @@ Output: dict with keys: job_id, user_requirements, character_design, location_de
 4. Send user message: `"Design the scene based on the characters and requirements."`
 5. Stream the LLM response, same as Phase 1.
 6. Parse `[TOOL_CALLS]:` marker, extract JSON, retrieve `function.arguments`.
-7. Store result as `result["location_design"]`. If parsing fails, defaults to `{locations: []}`.
-8. **Save `task.json`** (partial save after Phase 2).
-9. **Check stop event** — abort if set.
+7. **Z-mode normalization** (new): The LLM may output field names that differ from the schema:
+   - `location_name` → `location`
+   - `sex_pose` → `sex_act`
+   - `image_prompt` → `prompt`
+   - Missing `time`/`lighting` extracted from `scene_description` or set to defaults
+   Extra fields like `id` and `scene_description` are dropped to pass strict schema validation.
+8. Store result as `result["location_design"]`. If parsing fails, defaults to `{locations: []}`.
+9. **Save `task.json`** (partial save after Phase 2).
+10. **Check stop event** — abort if set.
 
 **Z-mode vs Tag-mode Output Differences:**
 
@@ -622,9 +628,10 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 
 | Component | Purpose |
 |-----------|---------|
-| `llm_conversation.LLMUtils` | HTTP client for Ollama API; handles streaming, tool calling, JSON validation |
+| `llm_conversation.LLMUtils` | HTTP client for Ollama API; handles streaming, tool calling, JSON validation. Strips markdown code fences from LLM output. |
 | `llm_conversation.Conversation` | Manages conversation history, system prompts, tool schemas |
 | `llm_utils.render_md_template()` | Jinja2-style rendering of `.md` prompt templates with variables |
+| `new_tab_workflow._normalize_z_mode_scene_data()` | Renames LLM output fields to match schema (e.g., `sex_pose`→`sex_act`, `location_name`→`location`), extracts missing `time`/`lighting` |
 | `image_prompt_generator.generate_prompts_for_locations()` | Produces 3 prompts per location using CSV lookup (Tag mode only) |
 | `workflow_selector.TemplateCatalog` | Static registry for scanning/loading workflow, prompt, and task templates |
 | `workflow_selector.apply_placeholders_unified()` | Placeholder substitution for ComfyUI workflow JSON; handles int/float conversion for numeric placeholders |
@@ -682,6 +689,7 @@ main_ui.py                          — UI code
   new_tab_mode_dropdown              — Type selector (Tag/Z)
 new_tab_workflow.py                 — Workflow logic
   run_new_tab_workflow()             — Main pipeline (~line 35)
+  _normalize_z_mode_scene_data()     — Z-mode field normalization (~line 38)
   _generate_prompts_for_locations()  — Prompt generation orchestrator (~line 227)
 image_prompt_generator.py           — Prompt builder
   generate_prompts_for_locations()   — Generates 3 prompts per location (~line 391)

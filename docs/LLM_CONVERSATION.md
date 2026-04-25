@@ -69,7 +69,7 @@ LLMUtils(
 - `context_window`: Context window size in tokens (default: 40000)
 - `reasoning_budget`: Maximum thinking tokens as integer (e.g., 500). **Note:** llama.cpp may not fully enforce this (known regression in builds before 8744).
 - `reasoning_budget_message`: Optional message injected when budget is reached
-- `enable_thinking`: Set to `False` to completely disable thinking/reasoning (useful for simple tasks)
+- `enable_thinking`: Set to `True` to enable thinking/reasoning (default: `False` — reasoning disabled)
 - `thinking_stop_token_bias`: Pseudo-budget via logit bias (e.g., 0.5–1.0). Makes the model more likely to close its thinking early without a hard limit. Recommended range: `0.5` to `1.0`.
 
 ---
@@ -174,14 +174,16 @@ for chunk in llm.chat(conv, "Design characters for a couple scene", chat_mode="j
 
 To prevent excessive reasoning tokens with Qwen models, you have three approaches (from strongest to weakest):
 
-**Option A: `enable_thinking=False`** — Completely disables thinking (strongest):
+**Note:** By default, `enable_thinking=False` — reasoning is already disabled. To enable it, pass `enable_thinking=True`.
+
+**Option A: `enable_thinking=False`** — Completely disables thinking (strongest, and the default):
 ```python
 from llm_conversation import LLMUtils, Conversation
 
 llm = LLMUtils(
     base_url="http://localhost:8081",
     model="qwen",
-    enable_thinking=False  # Disables all thinking/reasoning entirely
+    enable_thinking=False  # Disables all thinking/reasoning entirely (default behavior)
 )
 
 conv = Conversation(system_prompt="You are a helpful assistant.")
@@ -217,7 +219,7 @@ llm = LLMUtils(
 **Parameters:**
 - `reasoning_budget`: Maximum thinking tokens as **integer** (e.g., 500, 1000)
 - `reasoning_budget_message`: Optional message injected when budget is reached
-- `enable_thinking`: Set to `False` to completely disable thinking
+- `enable_thinking`: Set to `True` to enable thinking (default: `False` — reasoning disabled)
 - `thinking_stop_token_bias`: Float bias applied to the end-of-thought token (pseudo-budget)
 
 ---
@@ -282,6 +284,14 @@ logging.basicConfig(level=logging.WARNING)
 ```
 
 ---
+
+## JSON Parsing Robustness
+
+The parser handles several common LLM output formats:
+
+1. **Markdown code fences**: LLMs often wrap JSON in ````json ... `````. The parser strips trailing fences before parsing.
+2. **Refusal text + retry**: If the LLM outputs refusal text followed by valid JSON, the parser extracts the first `{` or `[` delimiter.
+3. **Tool calls vs plain JSON**: Detects `tool_calls` from the API response; if absent, validates the response as plain JSON.
 
 ## Error Handling
 

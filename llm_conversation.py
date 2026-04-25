@@ -228,6 +228,7 @@ class LLMUtils:
                         fn_args_str = func_data.get("arguments", "")
                         
                         logger.info(f"[CHAT] Function name: {fn_name}, arguments type: {type(fn_args_str)}")
+                        logger.info(f"[CHAT] Raw arguments length: {len(fn_args_str)}, first 200: {repr(fn_args_str[:200])}")
                         
                         args = fn_args_str
                         if isinstance(args, str):
@@ -251,10 +252,15 @@ class LLMUtils:
                         logger.info("[CHAT] No tool calls, validating as plain JSON")
                         try:
                             json_to_parse = full_json_content if full_json_content.strip() else full_response
+                            logger.info(f"[CHAT] full_json_content length: {len(full_json_content)}, first 200 chars: {repr(full_json_content[:200])}")
+                            logger.info(f"[CHAT] full_response length: {len(full_response)}, first 200 chars: {repr(full_response[:200])}")
+                            logger.info(f"[CHAT] current_arguments: {repr(current_arguments[:200])}")
                             # First try: parse the full content directly
                             try:
                                 parsed_json = json.loads(json_to_parse)
-                            except json.JSONDecodeError:
+                                logger.info("[CHAT] First parse attempt succeeded")
+                            except json.JSONDecodeError as e:
+                                logger.warning(f"[CHAT] First parse attempt FAILED: {e}")
                                 # Second try: LLM may have output refusal text + retry JSON
                                 # Find the FIRST { or [ to extract the JSON block
                                 brace_idx = json_to_parse.find("{")
@@ -267,8 +273,14 @@ class LLMUtils:
                                     start = bracket_idx
                                 else:
                                     raise json.JSONDecodeError("No JSON delimiter found", json_to_parse, 0)
-                                json_to_parse = json_to_parse[start:]
-                                parsed_json = json.loads(json_to_parse)
+                                extracted = json_to_parse[start:]
+                                logger.info(f"[CHAT] Extracted JSON from index {start}, length: {len(extracted)}, first 200: {repr(extracted[:200])}")
+                                try:
+                                    parsed_json = json.loads(extracted)
+                                    logger.info("[CHAT] Second parse attempt succeeded")
+                                except json.JSONDecodeError as e2:
+                                    logger.warning(f"[CHAT] Second parse attempt FAILED: {e2}")
+                                    raise e2
                             val_err = LLMUtils._validate_schema(parsed_json, conversation.tool_schema)
                             if val_err:
                                 validation_error = val_err

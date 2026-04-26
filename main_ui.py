@@ -31,6 +31,10 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "ltx"))
 from workflow_generator import generate_api_workflow, generate_workflow_for_wan_image, load_lora_lookup, _resolve_lora_params
 
+# Unified LoRA protocol
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "wan"))
+from wan_lora_manager import apply_lora_placeholders, apply_dynamic_lora_chaining
+
 # Unified workflow selector
 from workflow_selector import TemplateCatalog, apply_placeholders_unified
 
@@ -517,6 +521,9 @@ class VideoGenerationApp:
                                 lora_replacements[f"**lora{i+1}_strength**"] = lora['strength']
                 except Exception as e: self.log(f"DEBUG: LoRA lookup error: {e}")
         
+        # Count actual LoRAs found from CSV lookup (before defaults)
+        lora_count = len([k for k in lora_replacements if k.endswith('_name')]) // 2
+        
         # Defaults for missing LoRAs
         for i in range(1, 6):
             if f"**lora{i}_name**" not in lora_replacements:
@@ -577,6 +584,14 @@ class VideoGenerationApp:
                         else:
                             new_val = new_val.replace(placeholder, str(repl_val))
                 inputs[k] = new_val
+
+        # Apply dynamic LoRA chaining if multiple LoRAs found
+        if lora_count > 1:
+            lora_params = {k.replace("**", "").replace("**", ""): v for k, v in lora_replacements.items()}
+            workflow_json = apply_dynamic_lora_chaining(workflow_json, lora_count, lora_params)
+        elif lora_count == 0:
+            workflow_json = apply_dynamic_lora_chaining(workflow_json, 0, {})
+
         return wf_json
 
     def _run_processing_thread(self, selected_task, row_configs):

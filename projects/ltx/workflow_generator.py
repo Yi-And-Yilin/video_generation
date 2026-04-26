@@ -5,10 +5,10 @@ Generates dynamic workflow JSON files based on template, actions, and parameters
 Uses the StandardWorkflowParams interface for consistent parameter exchange.
 """
 
+import csv
 import json
 import os
-import csv
-import re
+import sys
 import random
 from typing import Dict, List, Any, Optional
 from copy import deepcopy
@@ -26,11 +26,21 @@ WAN_WORKFLOW_VIDEO_DIR = os.path.join(WAN_WORKFLOW_BASE, "video")
 LTX_WORKFLOW_BASE = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "workflows", "video")
 
 # Import parameter extraction module (same directory as workflow_generator.py)
-import sys
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 from parameter_extraction import StandardWorkflowParams
+
+# Import unified LoRA manager from projects/wan/
+# This provides a SINGLE protocol for LoRA lookup and placeholder replacement
+# across ALL generation types (image, WAN video, LTX video)
+sys.path.insert(0, os.path.join(os.path.dirname(SCRIPT_DIR), "wan"))
+from wan_lora_manager import (
+    load_lora_lookup as _load_lora_lookup_unified,
+    resolve_lora_params as _resolve_lora_params_unified,
+    apply_lora_placeholders as _apply_lora_placeholders_unified,
+    apply_dynamic_lora_chaining as _apply_dynamic_lora_chaining_unified,
+)
 
 
 def _resolve_wan_template_path(template_name: str) -> Optional[str]:
@@ -71,27 +81,11 @@ def _resolve_lora_params(acts: List[str], csv_name: str, workflow_name: str = No
     """
     Resolve LoRA names and strengths from acts + CSV lookup.
 
-    Parameters
-    ----------
-    acts : List[str]
-        List of action tags (e.g., sex acts) to look up in the CSV.
-    csv_name : str
-        Filename of the LoRA lookup CSV (e.g., "lora_lookup.csv" or "image_lora_lookup.csv").
-    workflow_name : str, optional
-        Workflow name filter for the CSV (e.g., "z-image", "pornmaster_proSDXLV8").
-    extra_lora_names : List[str], optional
-        Additional LoRA names to prepend before CSV lookups.
-    extra_lora_strengths : List[float], optional
-        Additional LoRA strengths (aligned with extra_lora_names).
-    filter_type : str, optional
-        Type filter for the CSV ("image" or "video"). Defaults to "image" if
-        csv_name is "image_lora_lookup.csv", "video" otherwise.
+    This is a thin wrapper around the unified LoRA manager's resolve_lora_params().
+    Maintains backward compatibility with existing callers.
 
-    Returns
-    -------
-    Dict[str, Any]
-        Dict with keys lora1_name, lora1_strength, ..., lora5_name, lora5_strength,
-        plus dynamic_lora_count (number of dynamic LoRAs from CSV).
+    For backward compatibility, this function delegates to the unified
+    wan_lora_manager.resolve_lora_params().
     """
     if extra_lora_names is None:
         extra_lora_names = []
@@ -100,205 +94,39 @@ def _resolve_lora_params(acts: List[str], csv_name: str, workflow_name: str = No
     if filter_type is None:
         filter_type = "image" if csv_name == "image_lora_lookup.csv" else "video"
 
-    loras = list(zip(extra_lora_names, extra_lora_strengths))
-
     # SCRIPT_DIR is projects/ltx, so we need to go up two levels to reach root
     ROOT_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
-    csv_path = os.path.join(ROOT_DIR, "lookup", csv_name)
-    if csv_path and os.path.exists(csv_path):
-        lookup = load_lora_lookup(csv_path, filter_type=filter_type,
-                                  workflow_name=workflow_name)
-        print(f"DEBUG: _resolve_lora_params: lookup has {len(lookup)} entries, acts={acts}, workflow_name={workflow_name}, filter_type={filter_type}")
-        for act in acts:
-            act_lower = act.lower().strip()
-            if act_lower in lookup:
-                print(f"DEBUG: Found '{act_lower}' in lookup, adding {len(lookup[act_lower])} loras")
-                loras.extend(lookup[act_lower])
-            else:
-                print(f"DEBUG: '{act_lower}' NOT in lookup")
+    csv_dir = os.path.join(ROOT_DIR, "lookup")
 
-    result = {}
-    dynamic_count = len(loras)
-    for i in range(1, 6):
-        idx = i - 1
-        if idx < len(loras):
-            lora = loras[idx]
-            if isinstance(lora, dict):
-                result[f'lora{i}_name'] = lora['name']
-                result[f'lora{i}_strength'] = lora['strength']
-            else:
-                result[f'lora{i}_name'] = lora[0]
-                result[f'lora{i}_strength'] = lora[1]
-        else:
-            result[f'lora{i}_name'] = "xl\\add-detail.safetensors"
-            result[f'lora{i}_strength'] = 0.0
-    result['dynamic_lora_count'] = dynamic_count
-    return result
+    return _resolve_lora_params_unified(
+        acts=acts,
+        csv_name=csv_name,
+        workflow_name=workflow_name,
+        extra_lora_names=extra_lora_names,
+        extra_lora_strengths=extra_lora_strengths,
+        filter_type=filter_type,
+        csv_dir=csv_dir,
+    )
 
 
 def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
     """
     Apply WAN-style dynamic placeholder replacement to a workflow.
-    Iterates through all nodes and replaces **XXX** strings in inputs.
     
-    Enhanced type conversion logic matching workflow_selector.py.
+    Thin wrapper around the unified LoRA manager's apply_lora_placeholders().
+    Maintains backward compatibility with existing callers.
     """
-    for node_id, node in workflow.items():
-        if not isinstance(node, dict):
-            continue
-        inputs = node.get("inputs", {})
-        cls = node.get("class_type", "")
-        
-        # For nodes with None values, first collect which lora level is used
-        # by scanning all **placeholder** patterns in this node's inputs.
-        # e.g., "**lora2_name**" -> level is 2 -> use lora2_strength for None fields
-        lora_level = None
-        for k2, v2 in inputs.items():
-            if isinstance(v2, str) and "**lora" in v2:
-                match = re.search(r"\*\*lora(\d+)_", v2)
-                if match:
-                    lora_level = int(match.group(1))
-                    break
-        
-        for k, v in inputs.items():
-            # Skip non-string, non-None values UNLESS this is a strength_model in a LoRA node
-            # (which needs special handling to replace hardcoded 0 with correct strength)
-            if not isinstance(v, str) and v is not None:
-                if not (lora_level and k == "strength_model"):
-                    continue
-            
-            if v is None:
-                # Check for matching **placeholder** wrapper
-                matched = False
-                for placeholder, repl_val in params.items():
-                    p_key = f"**{placeholder}**"
-                    if p_key in inputs:
-                        try:
-                            if "strength" in k.lower() or "strength" in placeholder:
-                                new_val = float(repl_val)
-                            elif "seed" in k.lower() or "width" in k.lower() or "height" in k.lower():
-                                new_val = int(repl_val)
-                            else:
-                                new_val = str(repl_val)
-                        except (ValueError, TypeError):
-                            new_val = str(repl_val)
-                        inputs[k] = new_val
-                        matched = True
-                        break
-                
-                if not matched:
-                    # Infer level from node context (e.g., lora_name -> lora2_name -> lora2_strength)
-                    if lora_level and "strength" in k.lower():
-                        key = f"lora{lora_level}_strength"
-                        if key in params:
-                            try:
-                                inputs[k] = float(params[key])
-                            except (ValueError, TypeError):
-                                inputs[k] = 0.0
-                        else:
-                            inputs[k] = 0.0
-                    elif lora_level:
-                        key = f"lora{lora_level}_{k}" if not k.startswith("lora") else f"lora{lora_level}_{k.replace('lora', '')}"
-                        if key in params:
-                            inputs[k] = params[key]
-                        elif f"lora{lora_level}_name" == k or k.endswith("_name"):
-                            inputs[k] = params.get(f"lora{lora_level}_name", "")
-                    inputs[k] = inputs.get(k, None)
-            else:
-                new_val = v
-                lora_strength_overridden = False
-                
-                # Handle dynamic LoRA chain placeholders
-                if "**dynamic_lora_chain_start**" in str(new_val):
-                    lora1_name = params.get("lora1_name", "xl\\add-detail.safetensors")
-                    new_val = new_val.replace("**dynamic_lora_chain_start**", str(lora1_name))
-                if "**dynamic_lora_chain_strength**" in str(new_val):
-                    lora1_strength = params.get("lora1_strength", 0.0)
-                    try:
-                        inputs[k] = float(lora1_strength)
-                    except (ValueError, TypeError):
-                        inputs[k] = str(lora1_strength)
-                    continue  # Done with this input
-                
-                for placeholder, repl_val in params.items():
-                    p_key = f"**{placeholder}**"
-                    if "**" in str(new_val) and p_key in str(new_val):
-                        # Type conversion check
-                        should_convert = (cls in ["JWInteger", "Int", "PrimitiveInt", "MathExpression|pysssss", 
-                                                 "ComfyMathExpression", "Float"] or 
-                                                  "strength" in placeholder or "seed" in placeholder or 
-                                                  "random" in placeholder or "width" in placeholder or 
-                                                  "height" in placeholder or "fps" in placeholder or
-                                                  "length" in placeholder or "steps" in placeholder or
-                                                  "shift" in placeholder or "denoise" in placeholder or
-                                                  "cfg" in placeholder)
-
-                        if should_convert:
-                            try:
-                                if "strength" in placeholder or cls == "Float":
-                                    new_val = float(repl_val)
-                                else:
-                                    new_val = int(repl_val)
-                            except (ValueError, TypeError):
-                                new_val = str(repl_val)
-                        else:
-                            if isinstance(new_val, str):
-                                new_val = new_val.replace(p_key, str(repl_val))
-                
-                # Handle strength_model in LoRA nodes: if node has **loraX_name** placeholder
-                # but strength_model is a hardcoded number (0), replace it with the correct strength
-                if lora_level and k == "strength_model" and isinstance(v, (int, float)):
-                    strength_key = f"lora{lora_level}_strength"
-                    if strength_key in params:
-                        try:
-                            inputs[k] = float(params[strength_key])
-                            lora_strength_overridden = True
-                        except (ValueError, TypeError):
-                            inputs[k] = 0.0
-                            lora_strength_overridden = True
-                
-                if not lora_strength_overridden:
-                    inputs[k] = new_val
-    return workflow
+    return _apply_lora_placeholders_unified(workflow, params)
 
 
 def apply_dynamic_lora_chaining(workflow: Dict, dynamic_lora_count: int, lora_params: Dict = None) -> Dict:
     """
     Apply dynamic LoRA chaining to a workflow based on CSV lookup results.
     
-    Parameters
-    ----------
-    workflow : Dict
-        The workflow JSON with placeholders already applied.
-    dynamic_lora_count : int
-        Number of dynamic LoRAs from CSV lookup (0 = no dynamic LoRAs, 1 = one, N = N LoRAs).
-    lora_params : Dict, optional
-        LoRA parameters dict (lora1_name, lora1_strength, etc.).
-    
-    Returns
-    -------
-    Dict
-        The workflow with dynamic LoRA nodes properly generated or removed.
+    Thin wrapper around the unified LoRA manager's apply_dynamic_lora_chaining().
+    Maintains backward compatibility with existing callers.
     """
-    if dynamic_lora_count < 1:
-        return _remove_dynamic_lora_nodes(workflow)
-    
-    return _generate_dynamic_lora_nodes(workflow, dynamic_lora_count, lora_params or {})
-
-
-def _remove_dynamic_lora_nodes(workflow: Dict) -> Dict:
-    """Remove Dynamic LoRA placeholder nodes and bypass upstream to downstream."""
-    # Find the Dynamic LoRA node
-    dynamic_node_id = None
-    for node_id, node in workflow.items():
-        if isinstance(node, dict):
-            title = node.get("_meta", {}).get("title", "")
-            if title.startswith("Dynamic LoRA"):
-                dynamic_node_id = node_id
-                break
-    
-    if dynamic_node_id is None:
-        return workflow
+    return _apply_dynamic_lora_chaining_unified(workflow, dynamic_lora_count, lora_params)
     
     # Find the model input reference from the Dynamic LoRA node
     dynamic_inputs = workflow[dynamic_node_id].get("inputs", {})
@@ -767,6 +595,9 @@ def generate_api_workflow(
 def load_lora_lookup(csv_path: str = None, filter_type: str = None, workflow_name: str = None) -> Dict[str, List[Dict]]:
     """
     Load LoRA lookup table from CSV.
+    
+    Thin wrapper around the unified LoRA manager's load_lora_lookup().
+    Also adds wan_* template support to the ltx_standard filter.
     """
     if csv_path is None:
         csv_path = os.path.join(os.path.dirname(SCRIPT_DIR), "lookup", "lora_lookup.csv")
@@ -782,7 +613,12 @@ def load_lora_lookup(csv_path: str = None, filter_type: str = None, workflow_nam
                 
                 row_workflow = row.get('workflow name', '').strip()
                 if workflow_name and row_workflow:
-                    if workflow_name.startswith("ltx_") or workflow_name == "ltx_standard":
+                    # LTX matching: all ltx_* templates match ltx_standard and vice versa
+                    if workflow_name.startswith("ltx_") or row_workflow.startswith("ltx_"):
+                        if not (row_workflow.startswith("ltx") or row_workflow == "ltx_standard"):
+                            continue
+                    # WAN matching: all wan_* templates match ltx_standard (shared LoRA entries)
+                    elif workflow_name.startswith("wan_") or row_workflow.startswith("wan_"):
                         if not (row_workflow.startswith("ltx") or row_workflow == "ltx_standard"):
                             continue
                     elif row_workflow != workflow_name:

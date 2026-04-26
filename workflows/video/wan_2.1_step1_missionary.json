@@ -85,7 +85,7 @@
       "offload_txt_emb": false,
       "use_non_blocking": false,
       "model": [
-        "30",
+        "29",
         0
       ]
     },
@@ -96,8 +96,8 @@
   },
   "29": {
     "inputs": {
-      "lora_name": "wan\\nsfw\\missionary_side.safetensors",
-      "strength_model": 1,
+      "lora_name": "**dynamic_lora_chain_start**",
+      "strength_model": "**dynamic_lora_chain_strength**",
       "model": [
         "32",
         0
@@ -105,35 +105,7 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "LoraLoaderModelOnly"
-    }
-  },
-  "30": {
-    "inputs": {
-      "lora_name": "wan\\nsfw\\新-nsfw-e14-fixed.safetensors",
-      "strength_model": 0.5,
-      "model": [
-        "35",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": {
-      "title": "LoraLoaderModelOnly"
-    }
-  },
-  "31": {
-    "inputs": {
-      "lora_name": "wan\\nsfw\\Wan2.2 - I2V - Orgasm - LOW 14B.safetensors",
-      "strength_model": 0.2,
-      "model": [
-        "29",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": {
-      "title": "LoraLoaderModelOnly"
+      "title": "Dynamic LoRA (chain start)"
     }
   },
   "32": {
@@ -182,20 +154,6 @@
     "class_type": "KSampler",
     "_meta": {
       "title": "KSampler"
-    }
-  },
-  "35": {
-    "inputs": {
-      "lora_name": "wan\\nsfw\\easy nsfw-wan2.1 i2v.safetensors",
-      "strength_model": 0.5,
-      "model": [
-        "31",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": {
-      "title": "LoraLoaderModelOnly"
     }
   }
 }

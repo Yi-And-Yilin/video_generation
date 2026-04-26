@@ -8,6 +8,7 @@ Uses the StandardWorkflowParams interface for consistent parameter exchange.
 import json
 import os
 import csv
+import re
 import random
 from typing import Dict, List, Any, Optional
 from copy import deepcopy
@@ -65,25 +66,48 @@ def _resolve_ltx_template_path(template_name: str) -> Optional[str]:
 
 def _resolve_lora_params(acts: List[str], csv_name: str, workflow_name: str = None,
                          extra_lora_names: List[str] = None,
-                         extra_lora_strengths: List[float] = None) -> Dict[str, Any]:
+                         extra_lora_strengths: List[float] = None,
+                         filter_type: str = None) -> Dict[str, Any]:
     """
     Resolve LoRA names and strengths from acts + CSV lookup.
+
+    Parameters
+    ----------
+    acts : List[str]
+        List of action tags (e.g., sex acts) to look up in the CSV.
+    csv_name : str
+        Filename of the LoRA lookup CSV (e.g., "lora_lookup.csv" or "image_lora_lookup.csv").
+    workflow_name : str, optional
+        Workflow name filter for the CSV (e.g., "z-image", "pornmaster_proSDXLV8").
+    extra_lora_names : List[str], optional
+        Additional LoRA names to prepend before CSV lookups.
+    extra_lora_strengths : List[float], optional
+        Additional LoRA strengths (aligned with extra_lora_names).
+    filter_type : str, optional
+        Type filter for the CSV ("image" or "video"). Defaults to "image" if
+        csv_name is "image_lora_lookup.csv", "video" otherwise.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dict with keys lora1_name, lora1_strength, ..., lora5_name, lora5_strength.
     """
     if extra_lora_names is None:
         extra_lora_names = []
     if extra_lora_strengths is None:
         extra_lora_strengths = []
+    if filter_type is None:
+        filter_type = "image" if csv_name == "image_lora_lookup.csv" else "video"
 
     loras = list(zip(extra_lora_names, extra_lora_strengths))
 
     # SCRIPT_DIR is projects/ltx, so we need to go up two levels to reach root
     ROOT_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
     csv_path = os.path.join(ROOT_DIR, "lookup", csv_name)
-    # print(f"DEBUG: _resolve_lora_params: csv_path={csv_path}, exists={os.path.exists(csv_path)}")
     if csv_path and os.path.exists(csv_path):
-        lookup = load_lora_lookup(csv_path, filter_type="image" if csv_name == "image_lora_lookup.csv" else "video",
+        lookup = load_lora_lookup(csv_path, filter_type=filter_type,
                                   workflow_name=workflow_name)
-        print(f"DEBUG: lookup has {len(lookup)} entries, acts={acts}, workflow_name={workflow_name}")
+        print(f"DEBUG: _resolve_lora_params: lookup has {len(lookup)} entries, acts={acts}, workflow_name={workflow_name}, filter_type={filter_type}")
         for act in acts:
             act_lower = act.lower().strip()
             if act_lower in lookup:
@@ -121,37 +145,87 @@ def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
             continue
         inputs = node.get("inputs", {})
         cls = node.get("class_type", "")
+        
+        # For nodes with None values, first collect which lora level is used
+        # by scanning all **placeholder** patterns in this node's inputs.
+        # e.g., "**lora2_name**" -> level is 2 -> use lora2_strength for None fields
+        lora_level = None
+        for k2, v2 in inputs.items():
+            if isinstance(v2, str) and "**lora" in v2:
+                match = re.search(r"\*\*lora(\d+)_", v2)
+                if match:
+                    lora_level = int(match.group(1))
+                    break
+        
         for k, v in inputs.items():
-            if not isinstance(v, str):
+            if not isinstance(v, str) and v is not None:
                 continue
             
-            new_val = v
-            for placeholder, repl_val in params.items():
-                p_key = f"**{placeholder}**"
-                if p_key in str(new_val):
-                    # Type conversion check
-                    should_convert = (cls in ["JWInteger", "Int", "PrimitiveInt", "MathExpression|pysssss", 
-                                             "ComfyMathExpression", "Float"] or 
-                                      "strength" in placeholder or "seed" in placeholder or 
-                                      "random" in placeholder or "width" in placeholder or 
-                                      "height" in placeholder or "fps" in placeholder or
-                                      "length" in placeholder or "steps" in placeholder or
-                                      "shift" in placeholder or "denoise" in placeholder or
-                                      "cfg" in placeholder)
-
-                    if should_convert:
+            if v is None:
+                # Check for matching **placeholder** wrapper
+                matched = False
+                for placeholder, repl_val in params.items():
+                    p_key = f"**{placeholder}**"
+                    if p_key in inputs:
                         try:
-                            if "strength" in placeholder or cls == "Float":
+                            if "strength" in k.lower() or "strength" in placeholder:
                                 new_val = float(repl_val)
-                            else:
+                            elif "seed" in k.lower() or "width" in k.lower() or "height" in k.lower():
                                 new_val = int(repl_val)
+                            else:
+                                new_val = str(repl_val)
                         except (ValueError, TypeError):
                             new_val = str(repl_val)
-                    else:
-                        if isinstance(new_val, str):
-                            new_val = new_val.replace(p_key, str(repl_val))
-            
-            inputs[k] = new_val
+                        inputs[k] = new_val
+                        matched = True
+                        break
+                
+                if not matched:
+                    # Infer level from node context (e.g., lora_name -> lora2_name -> lora2_strength)
+                    if lora_level and "strength" in k.lower():
+                        key = f"lora{lora_level}_strength"
+                        if key in params:
+                            try:
+                                inputs[k] = float(params[key])
+                            except (ValueError, TypeError):
+                                inputs[k] = 0.0
+                        else:
+                            inputs[k] = 0.0
+                    elif lora_level:
+                        key = f"lora{lora_level}_{k}" if not k.startswith("lora") else f"lora{lora_level}_{k.replace('lora', '')}"
+                        if key in params:
+                            inputs[k] = params[key]
+                        elif f"lora{lora_level}_name" == k or k.endswith("_name"):
+                            inputs[k] = params.get(f"lora{lora_level}_name", "")
+                    inputs[k] = inputs.get(k, None)
+            else:
+                new_val = v
+                for placeholder, repl_val in params.items():
+                    p_key = f"**{placeholder}**"
+                    if "**" in str(new_val) and p_key in str(new_val):
+                        # Type conversion check
+                        should_convert = (cls in ["JWInteger", "Int", "PrimitiveInt", "MathExpression|pysssss", 
+                                                 "ComfyMathExpression", "Float"] or 
+                                                  "strength" in placeholder or "seed" in placeholder or 
+                                                  "random" in placeholder or "width" in placeholder or 
+                                                  "height" in placeholder or "fps" in placeholder or
+                                                  "length" in placeholder or "steps" in placeholder or
+                                                  "shift" in placeholder or "denoise" in placeholder or
+                                                  "cfg" in placeholder)
+
+                        if should_convert:
+                            try:
+                                if "strength" in placeholder or cls == "Float":
+                                    new_val = float(repl_val)
+                                else:
+                                    new_val = int(repl_val)
+                            except (ValueError, TypeError):
+                                new_val = str(repl_val)
+                        else:
+                            if isinstance(new_val, str):
+                                new_val = new_val.replace(p_key, str(repl_val))
+                
+                inputs[k] = new_val
     return workflow
 
 
@@ -430,8 +504,12 @@ def load_lora_lookup(csv_path: str = None, filter_type: str = None, workflow_nam
                     continue
                 
                 row_workflow = row.get('workflow name', '').strip()
-                if workflow_name and row_workflow and row_workflow != workflow_name:
-                    continue
+                if workflow_name and row_workflow:
+                    if workflow_name.startswith("ltx_") or workflow_name == "ltx_standard":
+                        if not (row_workflow.startswith("ltx") or row_workflow == "ltx_standard"):
+                            continue
+                    elif row_workflow != workflow_name:
+                        continue
                 
                 lora_tag = row.get('lora_tag', '').strip().lower()
                 tag1 = row.get('tag1', '').strip().lower()

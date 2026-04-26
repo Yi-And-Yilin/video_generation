@@ -15,8 +15,8 @@ from copy import deepcopy
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Wan workflow base directory (projects/wan/workflow/)
-WAN_WORKFLOW_BASE = os.path.join(os.path.dirname(SCRIPT_DIR), "wan", "workflow")
+# Wan workflow base directory (workflows/ — shared with wan workflows)
+WAN_WORKFLOW_BASE = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "workflows")
 WAN_WORKFLOW_IMAGE_DIR = os.path.join(WAN_WORKFLOW_BASE, "image")
 WAN_WORKFLOW_VIDEO_DIR = os.path.join(WAN_WORKFLOW_BASE, "video")
 

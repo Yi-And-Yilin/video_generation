@@ -123,7 +123,7 @@ The WAN tab provides an **interactive GUI** for quick video generation using the
 | **Task Steps** | `task_steps.csv` | Defines workflow sequence per task type |
 | **Video Prompts** | `video_prompt.tsv` | Pre-written prompts categorized by action |
 | **Audio Prompts** | `audio_prompt.tsv` | Audio generation prompts by category |
-| **Workflow Templates** | `projects/wan/workflow/` | ComfyUI workflow JSON templates |
+| **Workflow Templates** | `workflows/` | ComfyUI workflow JSON templates |
 
 ### 2.3 Prompt Generation Method
 
@@ -289,7 +289,7 @@ User Instruction → Combine with Template → LLM (Qwen3.5) → Structured JSON
 **Prompt Tab → Image Tab → Video Generation**
 
 1. **Prompt Tab:** Generate task JSON via LLM
-2. **Image Tab:** Select task JSON, execute image generation using `wan_image.json` template with unified `**XXX**` placeholder protocol
+2. **Image Tab:** Select task JSON, execute image generation using `pornmaster_proSDXLV8.json` template with unified `**XXX**` placeholder protocol
 3. **Video Generation:** Use generated images as first frames for LTX-2 video generation
 
 **Unified Protocol:** Image Tab now shares the same `_apply_placeholders` engine as WAN Tab. LTX templates (`ltx_preparation.json`, `ltx_1st_sampling.json`, `ltx_upscale.json`, `ltx_2nd_sampling.json`, `ltx_decode.json`) use WAN-style naming (`**placeholder**`) for cross-tab compatibility.

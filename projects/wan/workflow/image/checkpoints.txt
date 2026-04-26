@@ -1,8 +1,0 @@
-# ComfyUI Checkpoint Models for Image Generation
-# Add new checkpoints one per line. Lines starting with # are comments.
-# Checkpoints are loaded from ComfyUI's models/checkpoints/ directory.
-
-meichiILIghtMIXV1_meichiILUstMIXV1.safetensors
-meichidarkmixReload_meichidarkanimv2Lust.safetensors
-pornmasterPro_noobV6.safetensors
-pornmaster_proSDXLV8.safetensors

@@ -269,7 +269,7 @@ The unified workflow selector system centralizes template discovery, loading, an
 
 | Method | Description |
 |--------|-------------|
-| `get_wan_workflow_options()` | Scans `projects/wan/workflow/` (root, `image/`, `video/`), returns sorted list with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `wan_image`, then alphabetical) |
+| `get_wan_workflow_options()` | Scans `workflows/` (root, `image/`, `video/`), returns sorted list with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `pornmaster_proSDXLV8`, then alphabetical) |
 | `load_template(template_key)` | Loads and parses `{template_key}.json` by searching root, `image/`, and `video/` subfolders |
 | `get_prompt_template_options()` | Scans `projects/ltx/prompts/*.md` (excluding `user-prompt.md`) |
 | `get_image_task_options()` | Scans `projects/ltx/tasks/*.json`, returns reverse-chronological sorted filenames |

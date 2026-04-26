@@ -14,7 +14,7 @@ The change idea was to **decommission the legacy LTX image generation** and unif
 ### A. Architectural Unification in `main_ui.py`
 - **Refactored Placeholder Logic:** Created a centralized `_apply_placeholders` method. This method now serves as the single source of truth for parameter injection. It scans the entire workflow JSON for any string containing `**XXX**` and replaces it with the corresponding value.
 - **Dynamic LoRA/Checkpoint Integration:** Integrated a robust lookup system into the placeholder process. It now automatically queries `image_lora_lookup.csv` or `lora_lookup.csv` based on the task type and UI category, mapping up to 5 LoRAs and a specific checkpoint to the workflow.
-- **WAN-style LTX Image Generation:** The "Image" tab no longer uses the `generate_api_workflow` legacy logic. It now loads a static `wan_image.json` template and processes it through the unified placeholder method, making it functionally identical to the WAN tab's processing but powered by LTX/SDXL.
+- **WAN-style LTX Image Generation:** The "Image" tab no longer uses the `generate_api_workflow` legacy logic. It now loads a static `pornmaster_proSDXLV8.json` template and processes it through the unified placeholder method, making it functionally identical to the WAN tab's processing but powered by LTX/SDXL.
 
 ### B. Global Workflow Generator Update (`projects/ltx/workflow_generator.py`)
 - **Decommissioned Title-Discovery:** Removed the complex logic that searched for nodes by `_meta.title`.
@@ -22,7 +22,7 @@ The change idea was to **decommission the legacy LTX image generation** and unif
 - **Unified Image Routing:** Modified `generate_api_workflow` so that any request for an "image" type task is automatically routed to the standardized WAN image template, ensuring consistent results across CLI and GUI.
 
 ### C. Workflow Template Standardization
-- **New `wan_image.json` Template:** Created a new base template for image generation that includes a 5-LoRA chain and specific `**XXX**` placeholders for dimensions, prompts, seeds, and models.
+- **New `pornmaster_proSDXLV8.json` Template:** Created a new base template for image generation that includes a 5-LoRA chain and specific `**XXX**` placeholders for dimensions, prompts, seeds, and models.
 - **LTX Video Template Conversion:** Converted the three primary LTX video workflows (`ltx_sampling.json`, `ltx_latent.json`, and `ltx-text-encoding.json`) to use the new placeholder pattern. 
 - **LoRA Chain Expansion:** Updated the LTX sampling template to include a 5-node LoRA chain to match the image generation capabilities.
 
@@ -38,8 +38,8 @@ The change idea was to **decommission the legacy LTX image generation** and unif
 - `task_steps.csv`: Added the new `wan_image` task definition.
 - `comfyui_job.py`: Updated to use the new unified workflow generator.
 
-### Workflow Templates (`projects/wan/workflow/`)
-- `wan_image.json`: (New) Standardized image generation template.
+### Workflow Templates (`workflows/`)
+- `pornmaster_proSDXLV8.json`: (New) Standardized image generation template (replaced `wan_image.json` in migration).
 - `wan_2.2_step0.json`: Refined placeholder consistency.
 
 ### LTX Project Files (`projects/ltx/`)

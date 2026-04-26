@@ -46,7 +46,7 @@ INPUT_FOLDER = os.path.join(COMFYUI_ROOT, "input")
 OUTPUT_FOLDER = os.path.join(COMFYUI_ROOT, "output")
 LATENT_OUTPUT_FOLDER = os.path.join(COMFYUI_ROOT, "output", "latents")
 CONDITIONING_OUTPUT_FOLDER = os.path.join(COMFYUI_ROOT, "output", "conditionings")
-WORKFLOW_TEMPLATE_DIR = os.path.join(SCRIPT_DIR, "projects", "wan", "workflow")
+WORKFLOW_TEMPLATE_DIR = os.path.join(SCRIPT_DIR, "workflows")
 PROCESSED_WORKFLOW_FOLDER = os.path.join(COMFYUI_ROOT, "output", "processed")
 TASK_STEPS_CSV = os.path.join(SCRIPT_DIR, "task_steps.csv")
 VIDEO_PROMPT_TSV = os.path.join(SCRIPT_DIR, "video_prompt.tsv")
@@ -953,9 +953,9 @@ class VideoGenerationApp:
             with open(os.path.join(LTX_PROJECT_DIR, "tasks", task_file), 'r', encoding='utf-8') as f: data = json.load(f)
             scenes = data.get("scenes", []); job_id = time.strftime("%Y%m%d_%H%M%S")
             
-            wf_path = os.path.join(WORKFLOW_TEMPLATE_DIR, "image", "wan_image.json")
+            wf_path = os.path.join(WORKFLOW_TEMPLATE_DIR, "image", "pornmaster_proSDXLV8.json")
             if not os.path.exists(wf_path):
-                self.log(f"ERROR: wan_image.json template not found at {wf_path}"); return
+                self.log(f"ERROR: pornmaster_proSDXLV8.json template not found at {wf_path}"); return
 
             res = self.image_resolution_var.get().split('*')
             width = res[0]; height = res[1] if len(res) > 1 else res[0]
@@ -974,10 +974,10 @@ class VideoGenerationApp:
                 wf_str = json.dumps(wf_json, indent=4)
                 
                 debug_dir = os.path.join(SCRIPT_DIR, "debug_workflows"); os.makedirs(debug_dir, exist_ok=True)
-                with open(os.path.join(debug_dir, f"{jid}_wan_image.json"), 'w', encoding='utf-8') as f: f.write(wf_str)
+                with open(os.path.join(debug_dir, f"{jid}_pornmaster_proSDXLV8.json"), 'w', encoding='utf-8') as f: f.write(wf_str)
                 
                 self.send_workflow_to_comfyui(wf_str, jid)
-                self.log(f"Sent {jid} to ComfyUI (Wan Image process)")
+                self.log(f"Sent {jid} to ComfyUI (Image process)")
                 time.sleep(0.5)
         except Exception as e: self.log(f"Image Error: {e}")
         finally: self.image_running = False; self.root.after(0, lambda: self.image_run_button.config(state=tk.NORMAL))

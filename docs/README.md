@@ -105,8 +105,8 @@ These files are referenced in the documentation but located elsewhere:
 - `video_prompt.tsv` - Video prompt templates by category
 - `audio_prompt.tsv` - Audio prompt templates by category
 - `projects/ltx/parameter_extraction.py` - StandardWorkflowParams dataclass & extraction functions
-- `projects/wan/workflow/` - WAN workflow JSON templates
-  - `image/wan_image.json` - SDXL image generation
+- `workflows/` - WAN workflow JSON templates
+  - `image/pornmaster_proSDXLV8.json` - SDXL image generation
   - `video/wan_2.1_step*.json`, `video/wan_2.2_step*.json` - Video generation steps
   - `FlashSVR.json`, `clean_up.json`, `final_upscale.json` - Shared templates
 - `projects/ltx/prompts/` - LTX prompt templates

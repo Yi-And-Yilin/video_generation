@@ -16,7 +16,7 @@ from typing import List, Dict, Any, Tuple, Optional
 # Point to the project root (same as main_ui.py SCRIPT_DIR)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-WAN_WORKFLOW_DIR = os.path.join(SCRIPT_DIR, "projects", "wan", "workflow")
+WAN_WORKFLOW_DIR = os.path.join(SCRIPT_DIR, "workflows")
 WAN_WORKFLOW_IMAGE_DIR = os.path.join(WAN_WORKFLOW_DIR, "image")
 WAN_WORKFLOW_VIDEO_DIR = os.path.join(WAN_WORKFLOW_DIR, "video")
 LTX_PROMPTS_DIR = os.path.join(SCRIPT_DIR, "projects", "ltx", "prompts")
@@ -47,7 +47,7 @@ class TemplateCatalog:
     @classmethod
     def get_checkpoint_options(cls) -> List[str]:
         """
-        Read checkpoint names from checkpoints.txt in projects/wan/workflow/image/.
+        Read checkpoint names from checkpoints.txt in workflows/image/.
 
         Format: one checkpoint filename per line. Lines starting with # are comments.
         Blank lines are ignored.
@@ -70,7 +70,7 @@ class TemplateCatalog:
     @classmethod
     def get_wan_workflow_options(cls) -> List[str]:
         """
-        Scan projects/wan/workflow/ (root, image/, video/ subfolders)
+        Scan workflows/ (root, image/, video/ subfolders)
         and return sorted template names.
         Includes FlashSVR, clean_up, final_upscale, wan_image at top,
         then alphabetical others.
@@ -118,7 +118,7 @@ class TemplateCatalog:
     @classmethod
     def load_template(cls, template_key: str) -> Dict[str, Any]:
         """
-        Load a workflow template JSON from projects/wan/workflow/{template_key}.json.
+        Load a workflow template JSON from workflows/{template_key}.json.
         Automatically resolves subfolders (image/ for wan_image, video/ for wan_2.*_step*).
         Returns the parsed JSON as a dictionary.
         """
@@ -126,7 +126,7 @@ class TemplateCatalog:
         if template_path is None:
             raise FileNotFoundError(
                 f"Workflow template not found: {template_key}.json "
-                f"(searched root, image/, and video/ under projects/wan/workflow/)"
+                f"(searched root, image/, and video/ under workflows/)"
             )
         with open(template_path, 'r', encoding='utf-8') as f:
             return json.load(f)

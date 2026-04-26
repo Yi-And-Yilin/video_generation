@@ -22,7 +22,7 @@ User said: "carry on" - asking to continue reviewing and fixing the video genera
 - **Root:** `C:\SimpleAIHelper\video_generation`
 - **Video Tab Module:** `video_tab.py` - New module for video generation from selected images
 - **LTX Batch Runner:** `projects/ltx/batch_runner.py` - 4-phase pipeline (Image → Text Encoding → Sampling → Latent Decode)
-- **Wan Workflow Templates:** `projects/wan/workflow/` - JSON workflow templates with placeholder replacement
+- **Wan Workflow Templates:** `workflows/` - JSON workflow templates with placeholder replacement
 - **Main UI:** `main_ui.py` - Integrates Video tab via `create_video_tab()` factory function
 
 ### Key Architecture Decisions

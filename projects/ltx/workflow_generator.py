@@ -158,8 +158,11 @@ def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
                     break
         
         for k, v in inputs.items():
+            # Skip non-string, non-None values UNLESS this is a strength_model in a LoRA node
+            # (which needs special handling to replace hardcoded 0 with correct strength)
             if not isinstance(v, str) and v is not None:
-                continue
+                if not (lora_level and k == "strength_model"):
+                    continue
             
             if v is None:
                 # Check for matching **placeholder** wrapper
@@ -200,6 +203,7 @@ def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
                     inputs[k] = inputs.get(k, None)
             else:
                 new_val = v
+                lora_strength_overridden = False
                 for placeholder, repl_val in params.items():
                     p_key = f"**{placeholder}**"
                     if "**" in str(new_val) and p_key in str(new_val):
@@ -225,7 +229,20 @@ def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
                             if isinstance(new_val, str):
                                 new_val = new_val.replace(p_key, str(repl_val))
                 
-                inputs[k] = new_val
+                # Handle strength_model in LoRA nodes: if node has **loraX_name** placeholder
+                # but strength_model is a hardcoded number (0), replace it with the correct strength
+                if lora_level and k == "strength_model" and isinstance(v, (int, float)):
+                    strength_key = f"lora{lora_level}_strength"
+                    if strength_key in params:
+                        try:
+                            inputs[k] = float(params[strength_key])
+                            lora_strength_overridden = True
+                        except (ValueError, TypeError):
+                            inputs[k] = 0.0
+                            lora_strength_overridden = True
+                
+                if not lora_strength_overridden:
+                    inputs[k] = new_val
     return workflow
 
 

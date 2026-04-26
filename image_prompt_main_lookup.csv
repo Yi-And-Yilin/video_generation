@@ -1,13 +1,13 @@
-id,main_action,possiblity,vertical_position,horizontal_angle,zoom,pov,extra_condition,extra_condition_2,male,male_head,male_upper,male_lower,male_feet,man_hand,male_croth,crotch,bottom,nipples,chest,male_body_part,head,face,back,thigh,leg,feet,arm,hand
-1,kiss,10,eye_level,,close-up,,"lean_against_{{vertical_surfaces}}, lie_on_{{lying_surfaces}}, sit_on_{{sitting_surfaces}}",,1,1,1,0,0,3,0,0,0,0,1,0,1,1,0,0,0,0,1,3
-2,hug,10,eye_level,,close-up,,,,1,1,1,0,0,3,0,0,0,0,1,0,1,1,0,0,0,0,1,3
-3,missionary,10,eye_level,side_view,,,,,1,1,1,1,1,1,1,0,1,3,1,1,1,1,0,1,1,1,1,1
-4,missionary,10,eye_level,side_view_left,close-up,,,,1,0,1,1,0,1,1,1,1,3,1,1,1,1,0,1,1,1,1,1
-5,cowgirl,10,from_below,frontal,,1,,,1,0,0,0,0,1,1,2,1,3,1,2,1,2,0,1,1,0,1,2
-6,kneeling_doggy,10,eye_level,side_view_left,,,,,1,1,1,1,0,1,1,0,1,3,1,0,1,0,1,1,1,1,1,1
-7,kneeling_doggy,10,from_above,back,,1,,,1,0,0,0,0,2,1,0,2,0,0,2,1,0,1,1,1,0,1,1
-8,oral,10,overhead,frontal,,1,,,0,0,0,0,0,2,1,0,0,2,2,2,0,2,0,0,0,0,1,2
-9,oral,10,eye_level,side_view,full-body,,,,1,1,1,1,1,2,1,0,1,3,1,2,1,1,0,1,1,1,1,2
-10,oral,10,eye_level,side_view,,,,,1,0,1,1,0,2,1,0,1,3,1,2,1,1,0,0,0,0,1,2
-11,oral,10,eye_level,side_view,close-up,,,,1,0,0,0,0,0,1,0,1,0,0,2,1,1,0,0,1,0,0,2
-12,reverse_cowgirl,10,from_above,side_view_left,,,lean backward,,1,0,1,1,0,2,1,0,0,0,0,0,1,2,1,1,1,1,1,
+id,main_action,action_category,image_lora_key,possiblity,vertical_position,horizontal_angle,zoom,pov,extra_condition,extra_condition_2,male,male_head,male_upper,male_lower,male_feet,man_hand,male_croth,crotch,bottom,nipples,chest,male_body_part,head,face,back,thigh,leg,feet,arm,hand
+1,kiss,kiss,kiss,10,eye_level,,close-up,,"lean_against_{{vertical_surfaces}}, lie_on_{{lying_surfaces}}, sit_on_{{sitting_surfaces}}",,1,1,1,0,0,3,0,0,0,0,1,0,1,1,0,0,0,0,1,3
+2,hug,none,none,10,eye_level,,close-up,,,,1,1,1,0,0,3,0,0,0,0,1,0,1,1,0,0,0,0,1,3
+3,missionary,missionary,missionary,10,eye_level,side_view,,,,,1,1,1,1,1,1,1,0,1,3,1,1,1,1,0,1,1,1,1,1
+4,missionary,missionary,missionary,10,eye_level,side_view_left,close-up,,,,1,0,1,1,0,1,1,1,1,3,1,1,1,1,0,1,1,1,1,1
+5,cowgirl,cowgirl,cowgirl,10,from_below,frontal,,1,,,1,0,0,0,0,1,1,2,1,3,1,2,1,2,0,1,1,0,1,2
+6,kneeling_doggy,doggy,doggy,10,eye_level,side_view_left,,,,,1,1,1,1,0,1,1,0,1,3,1,0,1,0,1,1,1,1,1,1
+7,kneeling_doggy,doggy,doggy,10,from_above,back,,1,,,1,0,0,0,0,2,1,0,2,0,0,2,1,0,1,1,1,0,1,1
+8,oral,oral,oral,10,overhead,frontal,,1,,,0,0,0,0,0,2,1,0,0,2,2,2,0,2,0,0,0,0,1,2
+9,oral,oral,oral,10,eye_level,side_view,full-body,,,,1,1,1,1,1,2,1,0,1,3,1,2,1,1,0,1,1,1,1,2
+10,oral,oral,oral,10,eye_level,side_view,,,,,1,0,1,1,0,2,1,0,1,3,1,2,1,1,0,0,0,0,1,2
+11,oral,oral,oral,10,eye_level,side_view,close-up,,,,1,0,0,0,0,0,1,0,1,0,0,2,1,1,0,0,1,0,0,2
+12,reverse_cowgirl,cowgirl,cowgirl,10,from_above,side_view_left,,,lean backward,,1,0,1,1,0,2,1,0,0,0,0,0,1,2,1,1,1,1,1,

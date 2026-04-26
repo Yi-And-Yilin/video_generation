@@ -1,0 +1,250 @@
+{
+  "4": {
+    "inputs": {
+      "ckpt_name": "pornmaster_proSDXLV8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "5": {
+    "inputs": {
+      "width": [
+        "97",
+        0
+      ],
+      "height": [
+        "98",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": [
+        "88",
+        0
+      ],
+      "clip": [
+        "63",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": [
+        "99",
+        0
+      ],
+      "clip": [
+        "63",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "10": {
+    "inputs": {
+      "seed": 89224638602763,
+      "steps": 25,
+      "cfg": 7,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "63",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "17": {
+    "inputs": {
+      "samples": [
+        "10",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "59": {
+    "inputs": {
+      "lora_name": "xl\\add-detail.safetensors",
+      "strength_model": 0.0,
+      "strength_clip": 0.0,
+      "model": [
+        "4",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "LoRA 1"
+    }
+  },
+  "60": {
+    "inputs": {
+      "lora_name": "xl\\add-detail.safetensors",
+      "strength_model": 0.0,
+      "strength_clip": 0.0,
+      "model": [
+        "59",
+        0
+      ],
+      "clip": [
+        "59",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "LoRA 2"
+    }
+  },
+  "61": {
+    "inputs": {
+      "lora_name": "xl\\add-detail.safetensors",
+      "strength_model": 0.0,
+      "strength_clip": 0.0,
+      "model": [
+        "60",
+        0
+      ],
+      "clip": [
+        "60",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "LoRA 3"
+    }
+  },
+  "62": {
+    "inputs": {
+      "lora_name": "xl\\add-detail.safetensors",
+      "strength_model": 0.0,
+      "strength_clip": 0.0,
+      "model": [
+        "61",
+        0
+      ],
+      "clip": [
+        "61",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "LoRA 4"
+    }
+  },
+  "63": {
+    "inputs": {
+      "lora_name": "xl\\add-detail.safetensors",
+      "strength_model": 0.0,
+      "strength_clip": 0.0,
+      "model": [
+        "62",
+        0
+      ],
+      "clip": [
+        "62",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "LoRA 5"
+    }
+  },
+  "79": {
+    "inputs": {
+      "filename_prefix": "wzk4h",
+      "images": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "88": {
+    "inputs": {
+      "string": "oral, overhead, pov, small penis, 1man, big dark nipple, Burgundy turtleneck, Black lace bra, cleavage, Silver bangle, European adult woman, Rare Books Archives, Dusty leather armchairs, Floor-to-ceiling bookshelves, Brass reading lamps, Old wooden tables, Night, Dim, warm yellow light from desk lamps"
+    },
+    "class_type": "StringConstant",
+    "_meta": {
+      "title": "Positive String"
+    }
+  },
+  "97": {
+    "inputs": {
+      "Number": 1024
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "Width"
+    }
+  },
+  "98": {
+    "inputs": {
+      "Number": 1024
+    },
+    "class_type": "Int",
+    "_meta": {
+      "title": "Height"
+    }
+  },
+  "99": {
+    "inputs": {
+      "string": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"
+    },
+    "class_type": "StringConstant",
+    "_meta": {
+      "title": "Negative String"
+    }
+  }
+}

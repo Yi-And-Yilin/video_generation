@@ -97,3 +97,56 @@ The following placeholders are now globally supported across all unified workflo
 - **Decoupled IDs:** Node IDs (e.g., "node_id": "10") no longer matter for the logic; the code only cares about the strings *inside* the values.
 - **Unified Debugging:** All tabs now generate debug JSONs in the `debug_workflows/` folder using the exact same naming convention, making multi-step troubleshooting much faster.
 - **Script Portability:** Standalone scripts like `comfyui_job.py` are now effectively "upgraded" to the full LoRA-capable system by simply calling the unified generator.
+
+---
+
+## F. Parameter Extraction Architecture
+
+### Pipeline Overview
+All workflow generation funnels through a standardized pipeline:
+
+```
+task.json (source)
+    ↓
+extract_params_from_new_tab_task() / extract_params_from_scene_task() / extract_params_for_wan_video()
+    ↓
+StandardWorkflowParams dataclass (canonical interface)
+    ↓
+params.for_wan_image() / params.for_wan_video_step0() / etc. (typed dict subsets)
+    ↓
+generate_workflow_from_standard_params(template, params_dict, type, acts, ...)
+    ↓
+placeholder replacement → workflow JSON → ComfyUI API
+```
+
+### Three Extractors
+
+1. **`extract_params_from_new_tab_task(task_path, scene_index, resolution)`**
+   - Reads New tab task.json with `character_design`, `location_design`, `locations` structure
+   - Extracts prompts from `location[scene_index].prompts[scene_index]`
+   - Maps character metadata, sex_loras, category, and scene_index
+   - Default negative prompt: SDXL quality exclusions
+
+2. **`extract_params_from_scene_task(task_path, resolution)`**
+   - Reads LTX scene-style task.json with `scenes` array
+   - Extracts `first_frame_image_prompt`, `main_sex_act`, `sex_loras`
+   - Similar defaults and field population as the New tab extractor
+
+3. **`extract_params_for_wan_video(task_path, work_id, resolution, seconds)`**
+   - Simplified extractor for the WAN video pipeline (img2vid)
+   - Extracts `video_pos_prompt` from `location_design.locations[0].prompts[0]`
+   - Sets `load_image`, `save_pos_conditioning`, `save_neg_conditioning`, `save_latent`, `save_video` with work_id-based names
+   - Defaults: `fps=16`, `seconds` from parameter
+
+### StandardWorkflowParams Dataclass
+Located in `projects/ltx/parameter_extraction.py`, the dataclass provides:
+- **60+ fields** covering all placeholder names across WAN 2.1, WAN 2.2, LTX, and SDXL templates
+- **Typed dict subsets** via `for_wan_image()`, `for_wan_video_step0/1/2/3()`, `for_ltx_sampling()`, `for_ltx_text_encoding()`, `for_ltx_latent_decode()`
+- **Utility methods**: `to_dict()`, `from_dict(data)`, `merge(**kwargs)`
+- **Defaults**: LoRA defaults to `xl\add-detail.safetensors@0.0`, checkpoint to `pornmaster_proSDXLV8.safetensors`, random_number auto-generated
+- **Fallback logic**: Methods use `or` patterns (e.g., `video_pos_prompt or self.prompt`) to ensure populated fields
+
+### Integration Points
+- The New tab's "Run ComfyUI" button calls `extract_params_from_new_tab_task()` → `for_wan_image()` → `generate_workflow_from_standard_params(type="image")`
+- The WAN video pipeline calls `extract_params_for_wan_video()` → `for_wan_video_step0()` through `step3()` sequentially
+- The LTX pipeline calls `extract_params_from_scene_task()` → `for_ltx_sampling()` / `for_ltx_text_encoding()` / `for_ltx_latent_decode()`

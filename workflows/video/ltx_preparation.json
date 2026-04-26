@@ -17,11 +17,11 @@
   },
   "2": {
     "inputs": {
-      "Number": "640"
+      "Number": "**video_width**"
     },
     "class_type": "Int",
     "_meta": {
-      "title": "**width"
+      "title": "Video Width"
     }
   },
   "3": {
@@ -38,11 +38,11 @@
   },
   "4": {
     "inputs": {
-      "Number": "640"
+      "Number": "**video_height**"
     },
     "class_type": "Int",
     "_meta": {
-      "title": "**height"
+      "title": "Video Height"
     }
   },
   "5": {
@@ -101,11 +101,11 @@
   },
   "8": {
     "inputs": {
-      "image": "z-image-turbo_00014_.png"
+      "image": "**load_image**"
     },
     "class_type": "LoadImage",
     "_meta": {
-      "title": "**image"
+      "title": "Load Image"
     }
   },
   "9": {
@@ -188,11 +188,11 @@
   },
   "16": {
     "inputs": {
-      "Number": "126"
+      "Number": "**video_length**"
     },
     "class_type": "Int",
     "_meta": {
-      "title": "**length"
+      "title": "Video Length"
     }
   },
   "17": {
@@ -266,7 +266,7 @@
   },
   "24": {
     "inputs": {
-      "text": "the waiter is similing",
+      "text": "**video_pos_prompt**",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -280,12 +280,12 @@
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "**prompt"
+      "title": "CLIP Text Encode (Positive)"
     }
   },
   "25": {
     "inputs": {
-      "filename": "positive_conditioning_preparation_1",
+      "filename": "**save_pos_conditioning**",
       "conditioning": [
         "24",
         0
@@ -293,7 +293,7 @@
     },
     "class_type": "StarConditioningSaver",
     "_meta": {
-      "title": "**positive_conditioning"
+      "title": "Save Positive Conditioning"
     }
   },
   "26": {
@@ -310,7 +310,7 @@
   },
   "27": {
     "inputs": {
-      "text": "watermark, text, logo, signature, copyright,noise, compression artifacts, jpeg artifacts, glitches,blurry, pixelated, low resolution, grainy, distorted,distorted face, asymmetric features, extra limbs, deformed hands, blurry eyes, disfigured, low quality, bad anatomy, poorly drawn face ",
+      "text": "**video_neg_prompt**",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -324,12 +324,12 @@
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "CLIP Text Encode (Negative)"
     }
   },
   "28": {
     "inputs": {
-      "filename": "negative_conditioning_preparation",
+      "filename": "**save_neg_conditioning**",
       "conditioning": [
         "27",
         0
@@ -337,7 +337,7 @@
     },
     "class_type": "StarConditioningSaver",
     "_meta": {
-      "title": "**negative_conditioning"
+      "title": "Save Negative Conditioning"
     }
   },
   "29": {
@@ -354,7 +354,7 @@
   },
   "30": {
     "inputs": {
-      "filename_prefix": "latents/preparation",
+      "filename_prefix": "latents/**save_latent**",
       "samples": [
         "1",
         0
@@ -362,7 +362,7 @@
     },
     "class_type": "SaveLatentLTXV",
     "_meta": {
-      "title": "**latent_out"
+      "title": "Save Latent"
     }
   },
   "31": {

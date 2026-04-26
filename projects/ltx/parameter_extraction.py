@@ -89,6 +89,7 @@ class StandardWorkflowParams:
 
     # === Temporal ===
     length: int = 241
+    video_length: int = 241
     fps: int = 24
     seconds: float = 10.0
     video_seconds: float = 10.0
@@ -98,6 +99,7 @@ class StandardWorkflowParams:
     image_pos_prompt: str = ""
     video_pos_prompt: str = ""
     image_neg_prompt: str = ""
+    video_neg_prompt: str = ""
     negative_prompt: str = ""
     audio_prompt: str = ""
     video_prompt: str = ""
@@ -137,6 +139,9 @@ class StandardWorkflowParams:
 
     # === Checkpoint ===
     checkpoint: str = "meichiILIghtMIXV1_meichiILUstMIXV1.safetensors"
+
+    # === Upscale ===
+    upscale_model_name: str = ""
 
     # === Category / Tags ===
     category: str = ""
@@ -691,7 +696,21 @@ def new_tab_task_to_ltx_batch_tasks(task_path: str) -> List[Dict]:
         for prompt_idx, prompt_obj in enumerate(prompts):
             if isinstance(prompt_obj, dict):
                 image_prompt = prompt_obj.get("image_prompt", prompt_obj.get("prompt", ""))
-                video_prompt = prompt_obj.get("video_prompt", prompt_obj.get("prompt", ""))
+                
+                # Extract video_prompt with proper fallback for empty/invalid dict
+                video_prompt_data = prompt_obj.get("video_prompt", None)
+                if isinstance(video_prompt_data, dict):
+                    # Check if the dict has meaningful content
+                    has_content = any(video_prompt_data.get(k, "") for k in ["action", "line", "female_character_sound"])
+                    if has_content:
+                        video_prompt = video_prompt_data
+                    else:
+                        # Empty placeholder dict - fall back to image prompt
+                        video_prompt = image_prompt or prompt_obj.get("prompt", "")
+                else:
+                    # No video_prompt key or invalid type - use image prompt as fallback
+                    video_prompt = image_prompt or prompt_obj.get("prompt", "")
+                
                 prompt_sex_act = prompt_obj.get("sex_act", sex_act)
                 if not prompt_sex_act and sex_act_list:
                     prompt_sex_act = sex_act_list[0]
@@ -702,11 +721,30 @@ def new_tab_task_to_ltx_batch_tasks(task_path: str) -> List[Dict]:
             
             work_id = f"{job_id}_scene{scene_idx}_act{prompt_idx}"
             
+            # Ensure video_pos_prompt is always a string
+            if isinstance(video_prompt, dict):
+                # Build string from dict if still somehow a dict
+                parts = []
+                action = video_prompt.get("action", "")
+                line = video_prompt.get("line", "")
+                sound = video_prompt.get("female_character_sound", "")
+                if action:
+                    parts.append(action)
+                if line:
+                    parts.append(f"Line: {line}")
+                if sound:
+                    parts.append(f"Sound: {sound}")
+                video_pos_prompt = " ".join(parts) if parts else ""
+            elif isinstance(video_prompt, str):
+                video_pos_prompt = video_prompt
+            else:
+                video_pos_prompt = ""
+            
             tasks.append({
                 "work_id": work_id,
                 "main_sex_act": prompt_sex_act,
                 "prompt": image_prompt,
-                "video_pos_prompt": video_prompt,
+                "video_pos_prompt": video_pos_prompt,
                 "negative_prompt": default_neg,
                 "scene_index": scene_idx,
                 "prompt_index": prompt_idx,

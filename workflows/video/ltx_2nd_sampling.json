@@ -10,8 +10,8 @@
   },
   "2": {
     "inputs": {
-      "lora_name": "ltx\\ltx-2.3-22b-distilled-lora-384.safetensors",
-      "strength_model": 0.5,
+      "lora_name": "**lora1_name**",
+      "strength_model": "**lora1_strength**",
       "model": [
         "1",
         0
@@ -19,13 +19,13 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "Load LoRA"
+      "title": "Load LoRA 1"
     }
   },
   "3": {
     "inputs": {
-      "lora_name": "ltx\\nsfw\\NSFW_furryv2.safetensors",
-      "strength_model": 0.01,
+      "lora_name": "**lora2_name**",
+      "strength_model": "**lora2_strength**",
       "model": [
         "2",
         0
@@ -33,7 +33,7 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "**lora"
+      "title": "Load LoRA 2"
     }
   },
   "4": {
@@ -132,7 +132,7 @@
   },
   "10": {
     "inputs": {
-      "noise_seed": 51589147000422
+      "noise_seed": "**random_number**"
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -141,25 +141,25 @@
   },
   "11": {
     "inputs": {
-      "conditioning_file": "negative_conditioning_cropped_3.pt"
+      "conditioning_file": "**load_neg_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
-      "title": "**negative_conditioning_load"
+      "title": "Load Negative Conditioning"
     }
   },
   "12": {
     "inputs": {
-      "conditioning_file": "positive_conditioning_cropped_3.pt"
+      "conditioning_file": "**load_pos_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
-      "title": "**positive_conditioning_load"
+      "title": "Load Positive Conditioning"
     }
   },
   "13": {
     "inputs": {
-      "filename_prefix": "latents/LTXV_AV",
+      "filename_prefix": "latents/**save_latent**",
       "samples": [
         "7",
         0
@@ -167,16 +167,16 @@
     },
     "class_type": "SaveLatentLTXV",
     "_meta": {
-      "title": "**latent_out"
+      "title": "Save Latent"
     }
   },
   "14": {
     "inputs": {
-      "latent": "latents\\upscaled_00003_.latent"
+      "latent": "latents\\**load_latent**"
     },
     "class_type": "LoadLatentLTXV",
     "_meta": {
-      "title": "**latent_in"
+      "title": "Load Latent"
     }
   }
 }

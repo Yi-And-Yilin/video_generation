@@ -91,7 +91,7 @@
   },
   "6": {
     "inputs": {
-      "latent": "latents\\step1_00001_.latent"
+      "latent": "latents\\**load_latent**"
     },
     "class_type": "LoadLatentLTXV",
     "_meta": {
@@ -100,7 +100,7 @@
   },
   "7": {
     "inputs": {
-      "model_name": "ltx-2.3-spatial-upscaler-x2-1.0.safetensors"
+      "model_name": "**upscale_model_name**"
     },
     "class_type": "LatentUpscaleModelLoader",
     "_meta": {
@@ -118,7 +118,7 @@
   },
   "9": {
     "inputs": {
-      "conditioning_file": "negative_conditioning_preparation.pt"
+      "conditioning_file": "**load_neg_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
@@ -127,7 +127,7 @@
   },
   "10": {
     "inputs": {
-      "conditioning_file": "positive_conditioning_preparation_1.pt"
+      "conditioning_file": "**load_pos_conditioning**"
     },
     "class_type": "StarConditioningLoader",
     "_meta": {
@@ -136,7 +136,7 @@
   },
   "11": {
     "inputs": {
-      "filename": "positive_conditioning_cropped_1",
+      "filename": "**save_pos_conditioning**",
       "conditioning": [
         "4",
         0
@@ -149,7 +149,7 @@
   },
   "12": {
     "inputs": {
-      "filename": "negative_conditioning_cropped_1",
+      "filename": "**save_neg_conditioning**",
       "conditioning": [
         "4",
         1
@@ -186,7 +186,7 @@
   },
   "16": {
     "inputs": {
-      "filename_prefix": "latents/upscaled",
+      "filename_prefix": "latents/**save_latent**",
       "samples": [
         "3",
         0
@@ -199,7 +199,7 @@
   },
   "18": {
     "inputs": {
-      "image": "z-image-turbo_00014_.png"
+      "image": "**load_image**"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -231,7 +231,7 @@
   },
   "21": {
     "inputs": {
-      "Number": "620"
+      "Number": "**height**"
     },
     "class_type": "Int",
     "_meta": {
@@ -240,7 +240,7 @@
   },
   "22": {
     "inputs": {
-      "Number": "620"
+      "Number": "**width**"
     },
     "class_type": "Int",
     "_meta": {

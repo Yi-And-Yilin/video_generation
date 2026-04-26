@@ -1,0 +1,104 @@
+{
+  "task_path": "C:\\SimpleAIHelper\\video_generation\\tasks\\wzk4h\\task.json",
+  "job_id": "wzk4h",
+  "user_requirements": "a chubby lady with big dark nipple, a short young man , in a libray",
+  "num_locations": 3,
+  "resolutions_tested": [
+    "1024*1024"
+  ],
+  "total_workflows_generated": 9,
+  "locations": [
+    {
+      "location_index": 0,
+      "location_name": "Main Reading Hall",
+      "num_prompts": 3,
+      "prompts": [
+        {
+          "prompt_index": 0,
+          "prompt_preview": "hug, eye_level, Short American young man, Light blue oxford shirt, 1man, wavy, Gold-rimmed reading g",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc00_prompt00_res1024.json",
+          "bug_note": false
+        },
+        {
+          "prompt_index": 1,
+          "prompt_preview": "hug, eye_level, Short American young man, Light blue oxford shirt, 1man, wavy, Gold-rimmed reading g",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc00_prompt01_res1024.json",
+          "bug_note": true
+        },
+        {
+          "prompt_index": 2,
+          "prompt_preview": "oral, overhead, pov, small penis, 1man, big dark nipple, Gold-rimmed reading glasses, Cream cable-kn",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc00_prompt02_res1024.json",
+          "bug_note": true
+        }
+      ]
+    },
+    {
+      "location_index": 1,
+      "location_name": "Rare Books Archives",
+      "num_prompts": 3,
+      "prompts": [
+        {
+          "prompt_index": 0,
+          "prompt_preview": "kiss, eye_level, Short American young man, Dark grey hoodie, 1man, wavy, Burgundy turtleneck, Black ",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc01_prompt00_res1024.json",
+          "bug_note": false
+        },
+        {
+          "prompt_index": 1,
+          "prompt_preview": "oral, overhead, pov, small penis, 1man, big dark nipple, Burgundy turtleneck, Black lace bra, cleava",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc01_prompt01_res1024.json",
+          "bug_note": true
+        },
+        {
+          "prompt_index": 2,
+          "prompt_preview": "kneeling_doggy, eye_level, side_view, Short American young man, Dark grey hoodie, Dark blue jeans, s",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc01_prompt02_res1024.json",
+          "bug_note": true
+        }
+      ]
+    },
+    {
+      "location_index": 2,
+      "location_name": "Rooftop Garden",
+      "num_prompts": 3,
+      "prompts": [
+        {
+          "prompt_index": 0,
+          "prompt_preview": "kneeling_doggy, from_above, back, pov, Short American young man, small penis, 1man, ass, Navy blue w",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc02_prompt00_res1024.json",
+          "bug_note": false
+        },
+        {
+          "prompt_index": 1,
+          "prompt_preview": "oral, eye_level, side_view, Short American young man, White linen shirt, Khaki shorts, White canvas ",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc02_prompt01_res1024.json",
+          "bug_note": true
+        },
+        {
+          "prompt_index": 2,
+          "prompt_preview": "kiss, eye_level, Short American young man, White linen shirt, 1man, wavy, Wide-brimmed straw hat, Pe",
+          "resolution": "1024*1024",
+          "output_file": "wzk4h_loc02_prompt02_res1024.json",
+          "bug_note": true
+        }
+      ]
+    }
+  ],
+  "bugs_found": [
+    "BUG CONFIRMED: Location 0, Prompt 1 - extract_params_from_new_tab_task(scene_index=0) returns prompts[0 % 3] instead of prompts[1]",
+    "BUG CONFIRMED: Location 0, Prompt 2 - extract_params_from_new_tab_task(scene_index=0) returns prompts[0 % 3] instead of prompts[2]",
+    "BUG CONFIRMED: Location 1, Prompt 1 - extract_params_from_new_tab_task(scene_index=1) returns prompts[1 % 3] instead of prompts[1]",
+    "BUG CONFIRMED: Location 1, Prompt 2 - extract_params_from_new_tab_task(scene_index=1) returns prompts[1 % 3] instead of prompts[2]",
+    "BUG CONFIRMED: Location 2, Prompt 1 - extract_params_from_new_tab_task(scene_index=2) returns prompts[2 % 3] instead of prompts[1]",
+    "BUG CONFIRMED: Location 2, Prompt 2 - extract_params_from_new_tab_task(scene_index=2) returns prompts[2 % 3] instead of prompts[2]"
+  ]
+}

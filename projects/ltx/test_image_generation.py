@@ -27,7 +27,7 @@ class TestLoRALookup(unittest.TestCase):
     """Test LoRA lookup CSV parsing."""
 
     def setUp(self):
-        self.csv_path = "image_lora_lookup.csv"
+        self.csv_path = os.path.join(os.path.dirname(__file__), "..", "..", "lookup", "image_lora_lookup.csv")
 
     def test_load_lora_lookup(self):
         """Test loading LoRA lookup from CSV."""
@@ -55,10 +55,10 @@ class TestLoRALookup(unittest.TestCase):
 class TestWorkflowGeneration(unittest.TestCase):
     """Test workflow JSON generation."""
 
-    @patch("requests.post")
+    @patch("main_ui.requests.post")
     def test_send_workflow_success(self, mock_post):
         """Test successful workflow submission to ComfyUI."""
-        from main_ui import COMFYUI_URL, VideoGenerationApp
+        from main_ui import VideoGenerationApp
 
         # Setup mock response
         mock_response = MagicMock()
@@ -67,9 +67,9 @@ class TestWorkflowGeneration(unittest.TestCase):
         mock_response.text = '{"prompt_id": "test-123"}'
         mock_post.return_value = mock_response
 
-        # Create mock app
-        mock_app = MagicMock()
-        mock_app._image_log = MagicMock()
+        # Create real app instance (just enough to get a working method ref)
+        app = MagicMock(spec=VideoGenerationApp)
+        app._image_log = MagicMock()
 
         # Test workflow dict (as returned by generate_api_workflow)
         test_workflow = {
@@ -81,8 +81,8 @@ class TestWorkflowGeneration(unittest.TestCase):
         # Convert to JSON string
         workflow_str = json.dumps(test_workflow)
 
-        # Call send_workflow_to_comfyui
-        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-work-id")
+        # Call send_workflow_to_comfyui as an instance method
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(app, workflow_str, "test-work-id")
 
         # Verify response
         self.assertIsNotNone(prompt_id)
@@ -141,7 +141,7 @@ class TestImageLoraLookup(unittest.TestCase):
     """Test image_lora_lookup.csv parsing (specific CSV format)."""
 
     def setUp(self):
-        self.csv_path = os.path.join(os.path.dirname(__file__), "..", "..", "projects", "ltx", "image_lora_lookup.csv")
+        self.csv_path = os.path.join(os.path.dirname(__file__), "..", "..", "lookup", "image_lora_lookup.csv")
 
     def test_load_image_lora_lookup(self):
         """Test loading the image_lora_lookup.csv file."""
@@ -180,7 +180,7 @@ class TestImageLoraLookup(unittest.TestCase):
 class TestWorkflowJsonSerialization(unittest.TestCase):
     """Test JSON serialization of workflow dicts."""
 
-    @patch("requests.post")
+    @patch("main_ui.requests.post")
     def test_dict_to_json_conversion(self, mock_post):
         """Test that workflow dict is properly converted to JSON string."""
         mock_response = MagicMock()
@@ -198,7 +198,8 @@ class TestWorkflowJsonSerialization(unittest.TestCase):
 
         # This is what the fixed code does
         workflow_str = json.dumps(workflow_dict)
-        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(workflow_str, "test-id")
+        app = MagicMock(spec=VideoGenerationApp)
+        prompt_id = VideoGenerationApp.send_workflow_to_comfyui(app, workflow_str, "test-id")
 
         self.assertIsNotNone(prompt_id)
 

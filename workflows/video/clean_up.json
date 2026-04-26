@@ -27,9 +27,24 @@
       "title": "Clean VRAM Used"
     }
   },
+  "4": {
+  "inputs": {
+    "root_dir": "output",
+    "file": "processed/**job_id**.txt",
+    "append": "append",
+    "insert": true,
+    "text": [
+      "6",
+      0
+    ]
+  },    "class_type": "SaveText|pysssss",
+    "_meta": {
+      "title": "**finish_signal"
+    }
+  },
   "5": {
     "inputs": {
-      "text": "what",
+      "text": "done",
       "speak_and_recognation": {
         "__value__": [
           false,
@@ -60,30 +75,11 @@
           false,
           true
         ]
-      },
-      "result": "what, what"
+      }
     },
     "class_type": "StringFunction|pysssss",
     "_meta": {
       "title": "String Function 🐍"
-    }
-  },
-  "7": {
-    "inputs": {
-      "path": "./ComfyUI/output/processed",
-      "filename_prefix": "job_id",
-      "filename_delimiter": "_",
-      "filename_number_padding": 0,
-      "file_extension": ".txt",
-      "encoding": "utf-8",
-      "text": [
-        "6",
-        0
-      ]
-    },
-    "class_type": "Save Text File",
-    "_meta": {
-      "title": "**finish_signal"
     }
   }
 }

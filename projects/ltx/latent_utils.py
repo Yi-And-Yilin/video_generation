@@ -214,6 +214,8 @@ def delete_conditioning_files(work_id: str,
     patterns = [
         os.path.join(conditionings_folder, f"positive_conditioning_{work_id}*.pt"),
         os.path.join(conditionings_folder, f"negative_conditioning_{work_id}*.pt"),
+        os.path.join(conditionings_folder, f"pos_{work_id}*.pt"),
+        os.path.join(conditionings_folder, f"neg_{work_id}*.pt"),
     ]
     
     files_to_delete = set()

@@ -584,6 +584,40 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
         loc_name = loc_data.get("location", "")
         llm_location_map[loc_name] = loc_data
     
+    def match_location_name(input_loc_name, llm_location_map):
+        """
+        Match an input location name against LLM output location names
+        using case-insensitive and substring matching for robustness.
+        Returns the matching llm_location_data or None.
+        """
+        if not llm_location_map:
+            return None
+        
+        input_lower = input_loc_name.lower()
+        
+        # Direct case-insensitive match
+        for llm_name, llm_data in llm_location_map.items():
+            if llm_name.lower() == input_lower:
+                return llm_data
+        
+        # Substring matching: input is substring of LLM name or vice versa
+        for llm_name, llm_data in llm_location_map.items():
+            if input_lower in llm_name.lower() or llm_name.lower() in input_lower:
+                return llm_data
+        
+        # Word-based matching: check if most words overlap
+        input_words = set(input_lower.split())
+        best_match = None
+        best_count = 0
+        for llm_name, llm_data in llm_location_map.items():
+            llm_words = set(llm_name.lower().split())
+            overlap = len(input_words & llm_words)
+            if overlap > best_count and overlap >= 2:
+                best_count = overlap
+                best_match = llm_data
+        
+        return best_match
+    
     # Update each location with video_prompt data
     for loc in locations:
         loc_name = loc.get("location", "")
@@ -591,8 +625,8 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
         if not prompts:
             continue
         
-        # Find corresponding LLM data for this location
-        llm_loc_data = llm_location_map.get(loc_name)
+        # Find corresponding LLM data for this location using robust matching
+        llm_loc_data = match_location_name(loc_name, llm_location_map)
         
         if llm_loc_data and "prompts" in llm_loc_data:
             llm_prompts = llm_loc_data["prompts"]
@@ -605,7 +639,12 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
                     if isinstance(prompt, dict):
                         # Z mode: update existing dict
                         prompt["image_prompt"] = llm_image_prompt or prompt.get("image_prompt", prompt.get("prompt", ""))
-                        prompt["video_prompt"] = video_prompt_data
+                        # Only set video_prompt if it has actual content (not empty placeholder)
+                        if video_prompt_data and any(video_prompt_data.get(k, "") for k in ["action", "line", "female_character_sound"]):
+                            prompt["video_prompt"] = video_prompt_data
+                        elif "video_prompt" not in prompt:
+                            # Keep existing video_prompt or set placeholder only if missing
+                            prompt["video_prompt"] = video_prompt_data
                     else:
                         # Tag mode: transform to dict
                         prompts[j] = {
@@ -613,7 +652,7 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
                             "video_prompt": video_prompt_data
                         }
                 else:
-                    # No video prompt from LLM, use placeholder
+                    # More prompts in input than LLM returned, use placeholder
                     if isinstance(prompt, dict):
                         if "image_prompt" not in prompt:
                             prompt["image_prompt"] = prompt.get("prompt", "")

@@ -2,35 +2,62 @@
   "type": "function",
   "function": {
     "name": "answer",
-    "description": "Write video prompt for each first frame image. One video prompt for one first frame image prompt.",
+    "description": "Write video prompts for each location and its image prompts. One video prompt per image prompt, organized by location.",
     "parameters": {
       "type": "object",
       "properties": {
         "video_prompts": {
           "type": "array",
-          "description": "List of video prompts, each corresponding to a first-frame image prompt.",
+          "description": "List of locations, each with its own list of video prompts for each image prompt.",
           "items": {
             "type": "object",
+            "required": ["location", "prompts"],
+            "additionalProperties": false,
             "properties": {
-              "action": {
+              "location": {
                 "type": "string",
-                "description": "Description of the action or movement in the video."
+                "description": "The location name (e.g., 'Bedroom', 'Bathroom')."
               },
-              "line": {
-                "type": "string",
-                "description": "Dialogue or spoken line (if any) in CHINESE!!"
-              },
-              "audio": {
-                "type": "string",
-                "description": "Background audio,sex action sound effects."
-              },
-              "female_character_sound": {
-                "type": "string",
-                "description": "Vocal quality and age of the female character (e.g., 'cute young girl sound', 'raspy elderly mature lady sound', 'breathy teenager girl sound', 'warm middle-aged woman sound')."
+              "prompts": {
+                "type": "array",
+                "description": "List of video prompts for this location, one per image prompt.",
+                "items": {
+                  "type": "object",
+                  "required": ["image_prompt", "video_prompt"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "image_prompt": {
+                      "type": "string",
+                      "description": "The original image prompt (copied from input)."
+                    },
+                    "video_prompt": {
+                      "type": "object",
+                      "description": "Video-specific metadata for this prompt.",
+                      "required": ["action", "line", "female_character_sound"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "action": {
+                          "type": "string",
+                          "description": "Detailed description of motion, character actions, and plot development. Focus on SEXUAL MOVEMENTS, speed, rhythm, intensity, transitions between positions, facial expressions, body reactions, moans, breathing. Write in present tense. NO visual scene description — this is motion-only."
+                        },
+                        "line": {
+                          "type": "string",
+                          "description": "One sentence of dialogue spoken by the FEMALE character. Must be in CHINESE. Example: 啊……你的鸡巴好烫……顶到老师最里面了……啊..."
+                        },
+                        "female_character_sound": {
+                          "type": "string",
+                          "description": "Vocal quality and age of the female character. E.g., 'cute young girl sound', 'raspy elderly mature lady sound', 'breathy teenager girl sound', 'warm middle-aged woman sound'."
+                        },
+						"audio": {
+                          "type": "string",
+                          "description": "not just envoriment sound, as well as sexual movement sounds, like Flesh slapping, wet squishing, rhythmic thudding, breathy moaning, slick clicking."
+                        }
+                      }
+                    }
+                  }
+                }
               }
-            },
-            "required": ["action", "line", "audio", "female_character_sound"],
-            "additionalProperties": false
+            }
           }
         }
       },

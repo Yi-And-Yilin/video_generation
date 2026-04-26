@@ -240,7 +240,7 @@ def apply_placeholders_unified(workflow_json: Dict[str, Any], params_dict: Dict[
             new_val = v
             for placeholder, repl_val in params_dict.items():
                 p_key = f"**{placeholder}**"
-                if p_key in new_val:
+                if isinstance(new_val, str) and p_key in new_val:
                     should_convert = (cls == "JWInteger" or
                                       "strength" in placeholder or
                                       "seed" in placeholder or
@@ -249,6 +249,8 @@ def apply_placeholders_unified(workflow_json: Dict[str, Any], params_dict: Dict[
                                       "height" in placeholder or
                                       "fps" in placeholder or
                                       "steps" in placeholder or
+                                      "shift" in placeholder or
+                                      "denoise" in placeholder or
                                       "cfg" in placeholder)
 
                     if should_convert:
@@ -261,8 +263,6 @@ def apply_placeholders_unified(workflow_json: Dict[str, Any], params_dict: Dict[
                             new_val = str(repl_val)
                     else:
                         new_val = new_val.replace(p_key, str(repl_val))
-
-                    break  # only apply first matching placeholder
 
             inputs[k] = new_val
 

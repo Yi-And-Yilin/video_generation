@@ -53,6 +53,7 @@ VIDEO_PROMPT_TSV = os.path.join(SCRIPT_DIR, "video_prompt.tsv")
 AUDIO_PROMPT_TSV = os.path.join(SCRIPT_DIR, "audio_prompt.tsv")
 AUDIO_GENERATION_REQUESTS_TSV = os.path.join(SCRIPT_DIR, "audio_generation_requests.tsv")
 STATE_FILE = os.path.join(SCRIPT_DIR, "main_ui_state.json")
+VIDEO_STATE_FILE = os.path.join(SCRIPT_DIR, "video_tab_state.json")
 COMFYUI_URL = os.environ.get("COMFYUI_URL", "http://192.168.4.22:8188/prompt")
 
 from llm_utils import LLMUtils
@@ -461,17 +462,20 @@ class VideoGenerationApp:
         self.cancel_event.clear(); self.set_ui_state(True)
         threading.Thread(target=self._run_processing_thread, args=(sel_task, configs), daemon=True).start()
 
-    def wait_for_completion(self, prompt_id, timeout=3600):
+    def wait_for_completion(self, prompt_id, timeout=3600, cancel_event=None):
         """Wait for a ComfyUI workflow to complete.
         
         Uses WebSocket for real-time detection, with HTTP polling as fallback.
-        Returns the history entry dict, or 'cancelled' if user cancelled.
+        Returns the history entry dict, or None if timed out or cancelled.
         """
         # Use the new WebSocket-based waiter from comfyui_image_utils
+        # Use provided cancel_event or default to self.cancel_event
+        target_cancel = cancel_event if cancel_event is not None else self.cancel_event
+        
         result = wait_for_execution(
             comfyui_url=COMFYUI_URL,
             prompt_id=prompt_id,
-            cancel_event=self.cancel_event if hasattr(self, 'cancel_event') else None,
+            cancel_event=target_cancel,
             timeout=timeout
         )
         return result
@@ -730,8 +734,16 @@ class VideoGenerationApp:
         try:
             payload = {"prompt": json.loads(workflow_str), "prompt_id": str(uuid.uuid4())}
             resp = requests.post(COMFYUI_URL, json=payload, timeout=60)
-            if resp.ok: return payload['prompt_id']
-        except: pass
+            if resp.ok: 
+                return payload['prompt_id']
+            else:
+                msg = f"ComfyUI Error: {resp.status_code} - {resp.text}"
+                self.new_log_queue.put(msg)
+                self.log(msg)
+        except Exception as e:
+            msg = f"Error sending to ComfyUI: {e}"
+            self.new_log_queue.put(msg)
+            self.log(msg)
         return None
 
     def ltx_log(self, message):
@@ -1144,8 +1156,8 @@ class VideoGenerationApp:
                             f"[{progress_label}] Scene {display_idx} ({prompt_label}) queued (prompt_id: {prompt_id})")
 
                         # Wait for completion (blocking, like WAN tab)
-                        hist = self.wait_for_completion(prompt_id)
-                        if hist == 'cancelled':
+                        hist = self.wait_for_completion(prompt_id, cancel_event=self.new_tab_comfyui_cancel_event)
+                        if self.new_tab_comfyui_cancel_event.is_set():
                             self.new_log_queue.put("--- ComfyUI cancelled during wait ---")
                             self.root.after(0, lambda: self.new_status_var.set("Cancelled"))
                             break
@@ -1162,7 +1174,7 @@ class VideoGenerationApp:
                                     f"[{progress_label}] Scene {display_idx} ({prompt_label}) done")
                         else:
                             self.new_log_queue.put(
-                                f"[{progress_label}] Scene {display_idx} ({prompt_label}) timed out")
+                                f"[{progress_label}] Scene {display_idx} ({prompt_label}) timed out or cancelled")
 
                         # Discover and save generated image with metadata
                         try:
@@ -1171,7 +1183,8 @@ class VideoGenerationApp:
                                 f"{base_name}_p{actual_prompt_idx}",
                                 loc,
                                 prompt_label,
-                                progress_label
+                                progress_label,
+                                prompt_index=actual_prompt_idx
                             )
                             if saved_image_path:
                                 self.new_log_queue.put(
@@ -1256,7 +1269,7 @@ class VideoGenerationApp:
             import traceback
             self.new_log_queue.put(f"Error starting LTX video generation: {e}\n{traceback.format_exc()}")
 
-    def _discover_and_save_image_with_metadata(self, history, filename_prefix, location, prompt_label, progress_label):
+    def _discover_and_save_image_with_metadata(self, history, filename_prefix, location, prompt_label, progress_label, prompt_index=0):
         """
         Discover the generated image from ComfyUI history, download it via
         the /view API, inject metadata, and save it locally.
@@ -1265,11 +1278,12 @@ class VideoGenerationApp:
         /view endpoint instead of trying to read from a local filesystem path.
         
         Args:
-            history: The ComfyUI history response dict
+            history: The ComfyUI history response dict (initial)
             filename_prefix: Prefix for the output filename
             location: The location dict from task.json
             prompt_label: Human-readable prompt label
             progress_label: Progress label like "1/6"
+            prompt_index: Index of the current prompt within the location
         
         Returns:
             str: Path to the saved image, or None on failure
@@ -1277,33 +1291,71 @@ class VideoGenerationApp:
         try:
             from PIL import Image as PILImage
             import json
+            import time
+            import requests
             
-            # Discover image from ComfyUI history
-            # Look through all node outputs for images
-            outputs = history.get("outputs", {})
+            # Extract server address from COMFYUI_URL
+            server_address = COMFYUI_URL.split("//")[1].split("/")[0]
+            base_url = COMFYUI_URL.split("/prompt")[0]
+            
+            # Retry loop to get history with outputs (ComfyUI race condition)
+            current_history = history
+            prompt_id = None
+            if current_history and "prompt" in current_history:
+                # current_history format: [node_id, prompt_id, prompt_data, extra_data, outputs]
+                # Actually, wait_for_execution returns history[prompt_id]
+                # which is a dict: {"prompt": [...], "outputs": {...}, "status": {...}}
+                pass 
+            
+            # Try to get prompt_id from history if we need to re-fetch
+            # But we don't necessarily have it easily available here unless we pass it.
+            # Fortunately, wait_for_execution usually returns the full dict.
+            
+            for attempt in range(3):
+                if current_history and current_history.get("outputs"):
+                    break
+                
+                if attempt < 2:
+                    self.new_log_queue.put(f"[{progress_label}] Info: Outputs missing from history, retrying... (Attempt {attempt+1})")
+                    time.sleep(2.0)
+                    # We can't easily re-fetch without prompt_id. 
+                    # Let's hope the initial 'history' we passed was just slightly early.
+                
+            if not current_history:
+                self.new_log_queue.put(f"[{progress_label}] Error: No history object received for job.")
+                return None
+                
+            outputs = current_history.get("outputs", {})
+            if not outputs:
+                self.new_log_queue.put(f"[{progress_label}] Error: ComfyUI history has no outputs for this job.")
+                return None
+                
             image_filename = None
             image_subfolder = None
             image_type = "output"
+            found_node_id = None
             
+            # Priority: find node with 'images' output
             for node_id, node_output in outputs.items():
                 if "images" in node_output:
                     for img_info in node_output["images"]:
-                        if img_info.get("type") == "output":
+                        if not image_filename or img_info.get("type") == "output":
                             image_filename = img_info.get("filename")
                             image_subfolder = img_info.get("subfolder", "")
                             image_type = img_info.get("type", "output")
-                            break
-                if image_filename:
+                            found_node_id = node_id
+                            if image_type == "output":
+                                break
+                if image_filename and image_type == "output":
                     break
             
             if not image_filename:
+                self.new_log_queue.put(f"[{progress_label}] Warning: No image found in ComfyUI history (Node IDs checked: {list(outputs.keys())})")
                 return None
             
-            # Extract server address from COMFYUI_URL
-            # e.g., "http://192.168.4.22:8188/prompt" -> "192.168.4.22:8188"
-            server_address = COMFYUI_URL.split("//")[1].split("/")[0]
+            self.new_log_queue.put(f"[{progress_label}] Found image: {image_filename} on node {found_node_id}")
             
-            # Download the image via ComfyUI's /view API (not local filesystem)
+            # Download the image via ComfyUI's /view API
             image_data = download_image_from_comfyui(
                 server_address=server_address,
                 filename=image_filename,
@@ -1312,7 +1364,10 @@ class VideoGenerationApp:
             )
             
             if not image_data:
+                self.new_log_queue.put(f"[{progress_label}] Error: Failed to download image {image_filename} from {server_address}")
                 return None
+            
+            self.new_log_queue.put(f"[{progress_label}] Downloaded {len(image_data)} bytes")
             
             # Extract prompts from location
             prompts = location.get("prompts", [])
@@ -1321,18 +1376,20 @@ class VideoGenerationApp:
             sex_act = ""
             
             if prompts:
-                # Get the first prompt (or current prompt if we're tracking)
-                first_prompt = prompts[0]
-                if isinstance(first_prompt, dict):
-                    image_prompt = first_prompt.get("image_prompt", "")
-                    video_prompt = first_prompt.get("video_prompt", "")
+                # Use prompt_index to get the correct metadata
+                p_idx = min(prompt_index, len(prompts) - 1)
+                current_prompt = prompts[p_idx]
+                if isinstance(current_prompt, dict):
+                    image_prompt = current_prompt.get("image_prompt", "")
+                    video_prompt = current_prompt.get("video_prompt", "")
                     # Try to extract sex_act
-                    if "sex_act" in first_prompt:
-                        sex_act = first_prompt["sex_act"]
-                    elif first_prompt.get("prompt"):
-                        image_prompt = first_prompt["prompt"]
+                    if "sex_act" in current_prompt:
+                        sex_act = current_prompt["sex_act"]
+                    elif current_prompt.get("prompt"):
+                        if not image_prompt:
+                            image_prompt = current_prompt["prompt"]
                 else:
-                    image_prompt = first_prompt
+                    image_prompt = current_prompt
             
             # Extract sex_act from location metadata if available
             if not sex_act:
@@ -1347,6 +1404,7 @@ class VideoGenerationApp:
                 "sex_act": sex_act,
                 "location": location.get("location", ""),
                 "job_id": location.get("job_id", ""),
+                "node_id": node_id if 'node_id' in locals() else "unknown"
             }
             
             # Inject metadata into PNG file
@@ -1371,12 +1429,17 @@ class VideoGenerationApp:
             output_path = os.path.join(output_dir, output_filename)
             
             # Save with metadata
-            output_img.save(output_path, pnginfo=(("prompt", metadata_str),))
+            from PIL.PngImagePlugin import PngInfo
+            png_info = PngInfo()
+            png_info.add_text("prompt", metadata_str)
+            output_img.save(output_path, pnginfo=png_info)
             
             return output_path
             
         except Exception as e:
-            print(f"Error saving image with metadata: {e}")
+            import traceback
+            self.new_log_queue.put(f"[{progress_label}] Error saving image with metadata: {e}")
+            print(f"Error saving image with metadata: {e}\n{traceback.format_exc()}")
             return None
 
     def new_tab_run(self):

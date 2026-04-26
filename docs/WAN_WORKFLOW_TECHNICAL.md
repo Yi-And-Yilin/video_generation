@@ -218,7 +218,7 @@ The dataclass organizes fields into logical categories:
 | Images/Videos | `image`, `load_image`, `save_video`, `save_image` |
 | Random/Seed | `random_number` (auto-generated 1-15 digit int) |
 | LoRA | `lora1..5_name`, `lora1..5_strength` (defaults: `xl\add-detail.safetensors` at `0.0`) |
-| Checkpoint | `checkpoint` (default: `pornmaster_proSDXLV8.safetensors`) |
+| Checkpoint | `checkpoint` (default: `wan_image.safetensors`) |
 | Metadata | `category`, `sex_loras`, `main_sex_act`, `character_male_name`, `character_female_name`, `location_name`, `scene_index` |
 
 ### Key Methods
@@ -269,7 +269,7 @@ The unified workflow selector system centralizes template discovery, loading, an
 
 | Method | Description |
 |--------|-------------|
-| `get_wan_workflow_options()` | Scans `workflows/` (root, `image/`, `video/`), returns sorted list with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `pornmaster_proSDXLV8`, then alphabetical) |
+| `get_wan_workflow_options()` | Scans `workflows/` (root, `image/`, `video/`), returns sorted list with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `wan_image`, then alphabetical) |
 | `load_template(template_key)` | Loads and parses `{template_key}.json` by searching root, `image/`, and `video/` subfolders |
 | `get_prompt_template_options()` | Scans `projects/ltx/prompts/*.md` (excluding `user-prompt.md`) |
 | `get_image_task_options()` | Scans `projects/ltx/tasks/*.json`, returns reverse-chronological sorted filenames |

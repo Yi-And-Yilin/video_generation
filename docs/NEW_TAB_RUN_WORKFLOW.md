@@ -246,14 +246,14 @@ After Phase 4 completes, the prompt format is unified across both modes. The `pr
 
 The `extract_params_from_new_tab_task()` function detects this Phase 4+ format and prioritizes `image_prompt` over the legacy `prompt` field.
 
-**Z-mode ComfyUI Execution:** ⚠️ Deprecated — the `z-image` template was removed in the migration. The old template was previously loaded from `workflows/image/z-image.json` with hardcoded defaults:
+**Z-mode ComfyUI Execution:** The `z-image` template is loaded from `workflows/image/z-image.json` with hardcoded defaults:
 - `steps`: 8
 - `cfg`: 1
 - `sampler_name`: "res_multistep"
 - `scheduler`: "simple"
 - `checkpoint`: "zImageTurboNSFW_50BF16Diffusion.safetensors"
 
-The old `z-image.json` template used `**XXX**` placeholder tokens that were substituted by `apply_placeholders_unified()` before sending to ComfyUI (template removed in migration).
+The `z-image.json` template uses `**XXX**` placeholder tokens that are substituted by `apply_placeholders_unified()` before sending to ComfyUI.
 
 **Metadata Injection:** After ComfyUI image generation, images are discovered from the ComfyUI history by scanning output nodes with `type == "output"` and an `images` array. Metadata JSON is injected into each image's PNG file using PIL/Pillow's `pnginfo` parameter. The metadata includes: `prompt`, `video_prompt`, `sex_act`, `male_character`, `female_character`, `location`, `job_id`, `timestamp`. Images are saved to the `output_images/` directory with structured naming: `<job_id>_scene_<index>_act_<sex_act>.png`.
 
@@ -465,7 +465,7 @@ Called after ComfyUI image generation completes. Reads `new_tab_last_job_id` to 
 - Height: 720px
 - Length: 241 frames
 - FPS: 24
-- Image model: `pornmaster_proSDXLV8`
+- Image model: `wan_image`
 
 **Important:** Source image files are deleted after Phase 3 sampling completes. Failed tasks are skipped in subsequent phases.
 
@@ -479,7 +479,7 @@ After the LLM pipeline completes and `task.json` is saved, users can click **"Ru
 
 Before clicking "Run ComfyUI", users can select a workflow template from the **ComfyUI** dropdown:
 
-- **Discovery**: `TemplateCatalog.get_wan_workflow_options()` scans `workflows/` (root, `image/`, and `video/` subfolders) and returns templates with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `pornmaster_proSDXLV8`, then alphabetically sorted others)
+- **Discovery**: `TemplateCatalog.get_wan_workflow_options()` scans `workflows/` (root, `image/`, and `video/` subfolders) and returns templates with priority ordering (`FlashSVR`, `clean_up`, `final_upscale`, `wan_image`, then alphabetically sorted others)
 - **Default**: `wan_image` (SDXL image generation)
 - **Loading**: `TemplateCatalog.load_template(template_name)` loads the JSON template file
 - **Placeholder substitution**: `apply_placeholders_unified(workflow, params_dict)` replaces `**placeholder**` tokens with actual values extracted from `task.json`
@@ -491,8 +491,8 @@ Before clicking "Run ComfyUI", users can select a workflow template from the **C
 1. **Read task.json**: Opens the current task file and extracts `location_design.locations`
 2. **Detect task mode**: Reads `task["mode"]` to determine Tag or Z mode
 3. **For each scene/prompt combination**:
-   - **Z mode**: ⚠️ Deprecated — `z-image` template was removed. The old flow loaded via `TemplateCatalog.load_template("z-image")` with hardcoded defaults (steps=8, cfg=1, etc.)
-    - **Tag mode + pornmaster_proSDXLV8 template**: Uses `generate_workflow_for_pornmaster_proSDXLV8()` from `workflow_generator.py`
+   - **Z mode**: Uses `z-image` template (fixed template for Z mode)
+    - **Tag mode + wan_image template**: Uses `generate_workflow_for_wan_image()` from `workflow_generator.py`
    - **Tag mode + other templates**: Uses `TemplateCatalog.load_template()` + `apply_placeholders_unified()` with params from `parameter_extraction.extract_params_from_new_tab_task()`
 4. **LoRA resolution**: Resolves LoRA names and strengths via `_resolve_lora_params()` and `image_lora_lookup.csv`
 5. **Debug save**: Writes the generated workflow to `debug_workflows/` for inspection
@@ -591,7 +591,7 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 │  Endpoint: COMFYUI_URL (/prompt)                            │      │
 │  Templates: TemplateCatalog (workflows/ root, image/, video/)              │      │
 │  Placeholders: apply_placeholders_unified(**XXX**)          │      │
-│  Z-mode template: REMOVED (z-image.json deprecated)         │      │
+│  Z-mode template: z-image.json (active)                       │      │
 └─────────────────────────────────────────────────────────────┘
                      │
                      ▼
@@ -645,7 +645,7 @@ The `StandardWorkflowParams` dataclass (from `projects/ltx/parameter_extraction.
 | `projects/ltx/workflow_generator.generate_api_workflow()` | Generates ComfyUI workflow JSON; accepts `video_pos_prompt` override |
 | `tasks/<job_id>/` | Directory where each job's `task.json` and intermediate files are stored |
 | `workflows/{root,image,video}/*.json` | ComfyUI workflow templates loaded by TemplateCatalog |
-| `workflows/image/` | Image templates: `pornmaster_proSDXLV8.json` (Tag mode); Z-mode template `z-image.json` was removed |
+| `workflows/image/` | Image templates: `wan_image.json` (Tag mode), `pornmaster_proSDXLV8.json` (alternative Tag mode); Z-mode template `z-image.json` |
 | `prompts/character_design.md` / `.json` | System prompt and function schema for character design |
 | `prompts/location_design.md` / `.json` | System prompt and function schema for scene design (Tag mode) |
 | `prompts/scene_design_z.md` / `.json` | System prompt and function schema for scene design (Z mode) |
@@ -700,8 +700,9 @@ projects/ltx/batch_runner.py        — LTX batch runner
   BatchRunner.run_batch()            — 4-phase pipeline: image → encoding → sampling → decode
 projects/ltx/workflow_generator.py  — generate_api_workflow() with video_pos_prompt support
 workflows/              — ComfyUI workflow templates
-  image/  pornmaster_proSDXLV8.json   — SDXL image generation (Tag mode)
-          z-image.json (REMOVED)      — Z-mode image generation (removed in migration)
+ image/  wan_image.json              — SDXL image generation (Tag mode, default)
+          pornmaster_proSDXLV8.json   — SDXL image generation (Tag mode, alternative)
+          z-image.json                — Z-mode image generation (active)
   video/  wan_2.1_step*.json          — WAN 2.1 video generation
           wan_2.2_step*.json          — WAN 2.2 video generation
   FlashSVR.json                       — Upscale (shared)

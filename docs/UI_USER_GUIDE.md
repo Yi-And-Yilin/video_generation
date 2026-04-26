@@ -46,7 +46,7 @@ The New tab provides an LLM-powered pipeline for character and scene design, fol
 +----------------------------------------------------------+
 |  [Open JSON] [Run ComfyUI] [Browse Task]  [task path]   |  <- Task Action Bar
 +----------------------------------------------------------+
-|  ComfyUI: [pornmaster_proSDXLV8 ▼] (disabled in Z mode)  |  <- Workflow Selector
+|  ComfyUI: [wan_image ▼] (disabled in Z mode)  |  <- Workflow Selector
 +----------------------------------------------------------+
 |  +------------------------------------------------------+|
 |  | Log:                                                  ||  <- Log Window (20 lines)
@@ -64,7 +64,7 @@ The New tab provides an LLM-powered pipeline for character and scene design, fol
 - **Default**: `Z`
 - **Behavior when switching to Z**:
   - ComfyUI template dropdown is **disabled** (greyed out)
-  - Image generation template dropdown is disabled (z-image template removed in migration)
+  - Image generation template dropdown is disabled (z-image template used for Z mode)
   - Phase 3 (CSV-based prompt generation) is **skipped** during pipeline execution
   - LLM generates complete `sex_act` + `prompt` pairs directly in Phase 2
 - **Behavior when switching to Tag**:
@@ -75,9 +75,9 @@ The New tab provides an LLM-powered pipeline for character and scene design, fol
 ### ComfyUI Workflow Selector
 
 - **ComfyUI dropdown**: Lists all available ComfyUI workflow templates from `workflows/` (root + `image/` + `video/` subfolders)
-- **Default**: `pornmaster_proSDXLV8` (SDXL image generation) in Tag mode; Z mode deprecated (no image template)
-- **Available templates (Tag mode)**: `FlashSVR`, `clean_up`, `final_upscale`, `pornmaster_proSDXLV8`, `wan_2.2_step0`, `wan_2.2_step1`, `wan_2.2_step2`, `wan_2.2_step3`, and category-specific variants (e.g., `wan_2.1_step1_masturbation`, `wan_2.1_step1_missionary`)
-- **Available templates (Z mode)**: None (Z mode deprecated; image template `z-image` was removed in migration)
+- **Default**: `wan_image` (SDXL image generation) in Tag mode; Z mode uses fixed `z-image` template
+- **Available templates (Tag mode)**: `FlashSVR`, `clean_up`, `final_upscale`, `wan_image`, `pornmaster_proSDXLV8`, `wan_2.2_step0`, `wan_2.2_step1`, `wan_2.2_step2`, `wan_2.2_step3`, and category-specific variants (e.g., `wan_2.1_step1_masturbation`, `wan_2.1_step1_missionary`)
+- **Available templates (Z mode)**: `z-image` (fixed template for Z mode image generation)
 - **Behavior**: Selecting a different template changes the ComfyUI workflow used when clicking "Run ComfyUI"
 - **Template discovery**: Powered by `TemplateCatalog.get_wan_workflow_options()` which scans `workflows/` (root, `image/`, `video/`) and returns templates sorted with priority ordering
 - **Template loading**: When Run ComfyUI is clicked, the selected template is loaded via `TemplateCatalog.load_template()` and placeholders are filled using `apply_placeholders_unified()`
@@ -99,7 +99,7 @@ The New tab provides an LLM-powered pipeline for character and scene design, fol
 2. **Phase 2 — ComfyUI Generation**: After the LLM pipeline completes, click **Run ComfyUI** to send generated image workflows to your ComfyUI instance.
 
    **Tag mode:** Uses the selected workflow template from the ComfyUI dropdown.
-   **Z mode:** Deprecated — the `z-image` template was removed in the migration. Z mode users should migrate to Tag mode.
+   **Z mode:** Uses fixed `z-image` template for image generation.
 
 ### Task Action Bar
 

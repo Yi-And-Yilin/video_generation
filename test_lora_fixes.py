@@ -6,6 +6,7 @@ Tests:
 2. Placeholder matching protects hardcoded paths — apply_wan_placeholders() doesn't touch Distill Lora node
 3. End-to-end workflow generation with acts — generate_api_workflow() produces correct nodes
 4. Empty acts fallback — generate_api_workflow() with acts=[] uses defaults
+5. Dynamic LoRA chaining — multiple LoRAs from CSV generate multiple nodes
 """
 
 import os
@@ -18,6 +19,7 @@ sys.path.insert(0, BASE_DIR)
 
 from workflow_generator import generate_api_workflow, load_lora_lookup, apply_wan_placeholders
 import projects.ltx.workflow_generator as wg
+from copy import deepcopy
 
 # CSV path for testing
 CSV_PATH = os.path.join(BASE_DIR, "lookup", "lora_lookup.csv")
@@ -126,19 +128,19 @@ def test_2_placeholder_matching():
 
     print(f"\n  Node 9 (Distill Lora) lora_name: {workflow['9']['inputs']['lora_name']}")
     print(f"  Node 9 (Distill Lora) strength_model: {workflow['9']['inputs']['strength_model']}")
-    print(f"  Node 10 (Load LoRA 1) lora_name: {workflow['10']['inputs']['lora_name']}")
+    print(f"  Node 10 (Dynamic LoRA) lora_name: {workflow['10']['inputs']['lora_name']}")
 
-    # Simulate params dict
+    # Simulate params dict with lora1 values (used for dynamic_lora_chain_start)
     params = {
         "lora1_name": r"ltx\nsfw\NSFW_furryv2.safetensors",
-        "lora1_strength": 0.3,
+        "lora1_strength": 0.9,
         "lora2_name": r"ltx\nsfw\Female Nudity.safetensors",
-        "lora2_strength": 0.9,
+        "lora2_strength": 0.3,
+        "dynamic_lora_count": 2,
     }
     print(f"  Params dict: {params}")
-    print(f"  Params keys: {list(params.keys())}")
 
-    modified = apply_wan_placeholders(workflow, params)
+    modified = apply_wan_placeholders(deepcopy(workflow), params)
 
     # Verify node 9 is untouched
     test_2a = "Node 9 lora_name is NOT replaced (still hardcoded)"
@@ -154,21 +156,24 @@ def test_2_placeholder_matching():
     if modified["9"]["inputs"]["strength_model"] != 0.5:
         results.add(f"  Expected: 0.5, Got: {modified['9']['inputs']['strength_model']}", False)
 
-    # Verify node 10 placeholder IS replaced (lora2_name -> Female Nudity from CSV)
-    test_2c = "Node 10 lora_name placeholder IS replaced (lora2_name -> Female Nudity)"
+    # Verify node 10 dynamic LoRA placeholder IS replaced with lora1 values
+    test_2c = "Node 10 **dynamic_lora_chain_start** IS replaced (lora1_name -> NSFW_furryv2)"
     node10_lora = modified["10"]["inputs"]["lora_name"]
-    results.add(test_2c, node10_lora == r"ltx\nsfw\Female Nudity.safetensors")
-    if node10_lora != r"ltx\nsfw\Female Nudity.safetensors":
-        results.add(f"  Expected: ltx\\nsfw\\Female Nudity.safetensors, Got: {node10_lora}", False)
+    results.add(test_2c, node10_lora == r"ltx\nsfw\NSFW_furryv2.safetensors")
+    if node10_lora != r"ltx\nsfw\NSFW_furryv2.safetensors":
+        results.add(f"  Expected: ltx\\nsfw\\NSFW_furryv2.safetensors, Got: {node10_lora}", False)
 
-    # Verify node 10 strength_model becomes float (from test params lora2_strength=0.9)
-    test_2d = "Node 10 strength_model becomes float (not null or string)"
+    # Verify node 10 strength_model becomes float from lora1_strength
+    test_2d = "Node 10 strength_model becomes float from lora1_strength (0.9)"
     node10_strength = modified["10"]["inputs"]["strength_model"]
-    results.add(test_2d, isinstance(node10_strength, (int, float)))
+    results.add(test_2d, isinstance(node10_strength, (int, float)) and node10_strength == 0.9)
     if isinstance(node10_strength, (int, float)):
-        print(f"    Node 10 strength_model = {node10_strength} (from lora2_strength=0.9 test param)")
+        if node10_strength == 0.9:
+            print(f"    Node 10 strength_model = {node10_strength} (correct from lora1_strength)")
+        else:
+            results.add(f"  Expected: 0.9, Got: {node10_strength}", False)
     else:
-        results.add(f"  Expected float/int, Got: {type(node10_strength).__name__} = {node10_strength}", False)
+        results.add(f"  Expected float, Got: {type(node10_strength).__name__}", False)
 
 
 def test_3_end_to_end_with_acts():
@@ -206,30 +211,75 @@ def test_3_end_to_end_with_acts():
     if workflow["9"]["inputs"]["strength_model"] != 0.5:
         results.add(f"  Expected: 0.5, Got: {workflow['9']['inputs']['strength_model']}", False)
 
-    # Check node 10 (Load LoRA 1) — lora_name should come from CSV lora2_name lookup
-    test_3c = "Node 10 lora_name is from CSV lookup (lora2 -> Female Nudity)"
-    node10_lora = workflow["10"]["inputs"]["lora_name"]
-    results.add(test_3c, node10_lora == r"ltx\nsfw\Female Nudity.safetensors")
-    if node10_lora != r"ltx\nsfw\Female Nudity.safetensors":
-        results.add(f"  Expected: ltx\\nsfw\\Female Nudity.safetensors, Got: {node10_lora}", False)
+    # With 2 dynamic LoRAs from CSV, we should have 2 LoRA nodes
+    # Node 10: Dynamic LoRA 1 = NSFW_furryv2.safetensors (strength 0.9)
+    # Node 11: Dynamic LoRA 2 = Female Nudity.safetensors (strength 0.3)
+    
+    # Check for Dynamic LoRA nodes
+    lora_nodes = []
+    for node_id, node in sorted(workflow.items(), key=lambda x: int(x[0])):
+        cls = node.get("class_type", "")
+        title = node.get("_meta", {}).get("title", "")
+        if cls == "LoraLoaderModelOnly" and title.startswith("Dynamic LoRA"):
+            lora_nodes.append((node_id, node))
+            print(f"\n  Dynamic LoRA Node {node_id} ({title}):")
+            print(f"    lora_name: {node['inputs'].get('lora_name', 'N/A')}")
+            print(f"    strength_model: {node['inputs'].get('strength_model', 'N/A')}")
+            print(f"    model: {node['inputs'].get('model', 'N/A')}")
 
-    # strength_model should come from lora2_strength=0.3 (not lora1)
-    test_3d = "Node 10 strength_model is 0.3 (float from lora2_strength, not 0.9)"
-    node10_strength = workflow["10"]["inputs"]["strength_model"]
-    results.add(test_3d, isinstance(node10_strength, float) and node10_strength == 0.3)
-    if isinstance(node10_strength, float):
-        if node10_strength == 0.3:
-            print(f"    Node 10 strength_model = {node10_strength} (correct)")
+    test_3c = "Two Dynamic LoRA nodes generated for 2 CSV LoRAs"
+    results.add(test_3c, len(lora_nodes) == 2)
+    if len(lora_nodes) != 2:
+        results.add(f"  Expected 2 LoRA nodes, got {len(lora_nodes)}", False)
+
+    if len(lora_nodes) >= 2:
+        lora1_id, lora1_node = lora_nodes[0]
+        lora2_id, lora2_node = lora_nodes[1]
+
+        test_3d = f"First LoRA node {lora1_id} has lora1_name (NSFW_furryv2)"
+        results.add(test_3d, r"NSFW_furryv2" in lora1_node["inputs"]["lora_name"])
+        if r"NSFW_furryv2" not in lora1_node["inputs"]["lora_name"]:
+            results.add(f"  Got: {lora1_node['inputs']['lora_name']}", False)
+
+        test_3e = f"First LoRA strength is 0.9 (from lora1_strength)"
+        lora1_strength = lora1_node["inputs"]["strength_model"]
+        results.add(test_3e, isinstance(lora1_strength, (int, float)) and lora1_strength == 0.9)
+        if not (isinstance(lora1_strength, (int, float)) and lora1_strength == 0.9):
+            results.add(f"  Got: {lora1_strength}", False)
+
+        test_3f = f"Second LoRA node {lora2_id} has lora2_name (Female Nudity)"
+        results.add(test_3f, r"Female Nudity" in lora2_node["inputs"]["lora_name"])
+        if r"Female Nudity" not in lora2_node["inputs"]["lora_name"]:
+            results.add(f"  Got: {lora2_node['inputs']['lora_name']}", False)
+
+        test_3g = f"Second LoRA strength is 0.3 (from lora2_strength)"
+        lora2_strength = lora2_node["inputs"]["strength_model"]
+        results.add(test_3g, isinstance(lora2_strength, (int, float)) and lora2_strength == 0.3)
+        if not (isinstance(lora2_strength, (int, float)) and lora2_strength == 0.3):
+            results.add(f"  Got: {lora2_strength}", False)
+
+        # Check chaining: LoRA2.model -> [LoRA1_id, 0]
+        test_3h = f"Chaining: LoRA2.model = [{lora1_id}, 0]"
+        lora2_model = lora2_node["inputs"]["model"]
+        results.add(test_3h, isinstance(lora2_model, list) and lora2_model[0] == lora1_id and lora2_model[1] == 0)
+        if not (isinstance(lora2_model, list) and lora2_model[0] == lora1_id):
+            results.add(f"  Got: {lora2_model}", False)
+
+        # Check downstream: Sage Attention (or CFGGuider) should reference last LoRA
+        # Node 11 (original) should now reference the last LoRA node
+        sage_node_id = None
+        for nid, node in workflow.items():
+            if node.get("class_type") == "PathchSageAttentionKJ":
+                sage_node_id = nid
+                break
+        if sage_node_id:
+            sage_model = workflow[sage_node_id]["inputs"]["model"]
+            test_3i = f"Downstream: Sage Attention references last LoRA ({lora2_id})"
+            results.add(test_3i, isinstance(sage_model, list) and str(sage_model[0]) == lora2_id)
+            if not (isinstance(sage_model, list) and str(sage_model[0]) == lora2_id):
+                results.add(f"  Sage model = {sage_model}, expected = [{lora2_id}, 0]", False)
         else:
-            print(f"    Node 10 strength_model = {node10_strength} (expected 0.3)")
-    else:
-        print(f"    Node 10 strength_model type = {type(node10_strength).__name__} (expected float)")
-
-    # Debug: show what all nodes look like
-    print(f"\n  Node 9: class={workflow['9'].get('class_type')}, lora_name={workflow['9']['inputs']['lora_name']}")
-    print(f"  Node 9 strength_model: {workflow['9']['inputs']['strength_model']} (type={type(workflow['9']['inputs']['strength_model']).__name__})")
-    print(f"  Node 10: class={workflow['10'].get('class_type')}, lora_name={workflow['10']['inputs']['lora_name']}")
-    print(f"  Node 10 strength_model: {workflow['10']['inputs']['strength_model']} (type={type(workflow['10']['inputs']['strength_model']).__name__})")
+            print(f"    Warning: Sage Attention node not found")
 
 
 def test_4_empty_acts_fallback():
@@ -262,18 +312,38 @@ def test_4_empty_acts_fallback():
         results.add(f"  Expected: {expected_hardcoded}", False)
         results.add(f"  Got: {node9_lora}", False)
 
-    # Node 10 should use default LoRA (add-detail at strength 0.0)
-    test_4b = "Node 10 lora_name is default (add-detail.safetensors) with empty acts"
-    node10_lora = workflow["10"]["inputs"]["lora_name"]
-    results.add(test_4b, node10_lora == r"xl\add-detail.safetensors")
-    if node10_lora != r"xl\add-detail.safetensors":
-        results.add(f"  Expected: xl\\add-detail.safetensors, Got: {node10_lora}", False)
+    # With 0 dynamic LoRAs: Dynamic LoRA node should be REMOVED
+    # Check that there are no Dynamic LoRA nodes
+    dynamic_lora_nodes = [nid for nid, n in workflow.items() 
+                          if n.get("_meta", {}).get("title", "").startswith("Dynamic LoRA")]
+    test_4b = "No Dynamic LoRA nodes with empty acts (0 dynamic LoRAs)"
+    results.add(test_4b, len(dynamic_lora_nodes) == 0)
+    if len(dynamic_lora_nodes) > 0:
+        results.add(f"  Found Dynamic LoRA nodes: {dynamic_lora_nodes}", False)
 
-    test_4c = "Node 10 strength_model is 0.0 (default) with empty acts"
-    node10_strength = workflow["10"]["inputs"]["strength_model"]
-    results.add(test_4c, isinstance(node10_strength, (int, float)) and node10_strength == 0.0)
-    if node10_strength != 0.0:
-        results.add(f"  Expected: 0.0, Got: {node10_strength} (type={type(node10_strength).__name__})", False)
+    # Check that Sage Attention node exists and references Distill node
+    sage_node_id = None
+    for nid, node in workflow.items():
+        if node.get("class_type") == "PathchSageAttentionKJ":
+            sage_node_id = nid
+            break
+    test_4c = "Sage Attention node exists and links to Distill after bypass"
+    if sage_node_id:
+        sage_model = workflow[sage_node_id]["inputs"]["model"]
+        results.add(test_4c, isinstance(sage_model, list) and sage_model[0] == "9" and sage_model[1] == 0)
+        if not (isinstance(sage_model, list) and sage_model[0] == "9" and sage_model[1] == 0):
+            results.add(f"  Sage model = {sage_model}, expected = ['9', 0]", False)
+    else:
+        results.add(test_4c, False)
+        results.add("  Sage Attention node not found", False)
+
+    # Show what LoRA nodes exist
+    print(f"\n  LoRA nodes in workflow:")
+    for nid, node in sorted(workflow.items(), key=lambda x: int(x[0])):
+        cls = node.get("class_type", "")
+        title = node.get("_meta", {}).get("title", "")
+        if "LoraLoader" in cls:
+            print(f"    Node {nid} ({title}): lora_name={node['inputs'].get('lora_name', 'N/A')}")
 
 
 def test_5_other_ltx_templates():
@@ -318,11 +388,6 @@ def test_6_placeholder_replacement_mechanism():
         results.add(test_6b, modified2["1"]["inputs"]["lora_name"] == r"ltx\nsfw\NSFW_furryv2.safetensors")
     except Exception as e:
         results.add(f"With ** wrapper, placeholder IS replaced (error: {e})", False)
-
-
-import copy
-def deepcopy(obj):
-    return copy.deepcopy(obj)
 
 
 if __name__ == "__main__":

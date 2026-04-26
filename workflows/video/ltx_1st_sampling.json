@@ -10,7 +10,7 @@
   },
   "3": {
     "inputs": {
-      "noise_seed": "**random_number**"
+      "noise_seed": null
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -37,8 +37,8 @@
   },
   "9": {
     "inputs": {
-      "lora_name": "**lora1_name**",
-      "strength_model": "**lora1_strength**",
+      "lora_name": "ltx\\ltx-2.3-22b-distilled-lora-384-1.1.safetensors",
+      "strength_model": 0.5,
       "model": [
         "19",
         0
@@ -46,13 +46,13 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "Load LoRA 1"
+      "title": "Distill Lora"
     }
   },
   "10": {
     "inputs": {
-      "lora_name": "**lora2_name**",
-      "strength_model": "**lora2_strength**",
+      "lora_name": "**dynamic_lora_chain_start**",
+      "strength_model": "**dynamic_lora_chain_strength**",
       "model": [
         "9",
         0
@@ -60,7 +60,7 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "Load LoRA 2"
+      "title": "Dynamic LoRA (chain start)"
     }
   },
   "11": {

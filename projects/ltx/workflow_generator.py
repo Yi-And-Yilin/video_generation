@@ -90,7 +90,8 @@ def _resolve_lora_params(acts: List[str], csv_name: str, workflow_name: str = No
     Returns
     -------
     Dict[str, Any]
-        Dict with keys lora1_name, lora1_strength, ..., lora5_name, lora5_strength.
+        Dict with keys lora1_name, lora1_strength, ..., lora5_name, lora5_strength,
+        plus dynamic_lora_count (number of dynamic LoRAs from CSV).
     """
     if extra_lora_names is None:
         extra_lora_names = []
@@ -117,6 +118,7 @@ def _resolve_lora_params(acts: List[str], csv_name: str, workflow_name: str = No
                 print(f"DEBUG: '{act_lower}' NOT in lookup")
 
     result = {}
+    dynamic_count = len(loras)
     for i in range(1, 6):
         idx = i - 1
         if idx < len(loras):
@@ -130,6 +132,7 @@ def _resolve_lora_params(acts: List[str], csv_name: str, workflow_name: str = No
         else:
             result[f'lora{i}_name'] = "xl\\add-detail.safetensors"
             result[f'lora{i}_strength'] = 0.0
+    result['dynamic_lora_count'] = dynamic_count
     return result
 
 
@@ -204,6 +207,19 @@ def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
             else:
                 new_val = v
                 lora_strength_overridden = False
+                
+                # Handle dynamic LoRA chain placeholders
+                if "**dynamic_lora_chain_start**" in str(new_val):
+                    lora1_name = params.get("lora1_name", "xl\\add-detail.safetensors")
+                    new_val = new_val.replace("**dynamic_lora_chain_start**", str(lora1_name))
+                if "**dynamic_lora_chain_strength**" in str(new_val):
+                    lora1_strength = params.get("lora1_strength", 0.0)
+                    try:
+                        inputs[k] = float(lora1_strength)
+                    except (ValueError, TypeError):
+                        inputs[k] = str(lora1_strength)
+                    continue  # Done with this input
+                
                 for placeholder, repl_val in params.items():
                     p_key = f"**{placeholder}**"
                     if "**" in str(new_val) and p_key in str(new_val):
@@ -243,6 +259,238 @@ def apply_wan_placeholders(workflow: Dict, params: Dict) -> Dict:
                 
                 if not lora_strength_overridden:
                     inputs[k] = new_val
+    return workflow
+
+
+def apply_dynamic_lora_chaining(workflow: Dict, dynamic_lora_count: int, lora_params: Dict = None) -> Dict:
+    """
+    Apply dynamic LoRA chaining to a workflow based on CSV lookup results.
+    
+    Parameters
+    ----------
+    workflow : Dict
+        The workflow JSON with placeholders already applied.
+    dynamic_lora_count : int
+        Number of dynamic LoRAs from CSV lookup (0 = no dynamic LoRAs, 1 = one, N = N LoRAs).
+    lora_params : Dict, optional
+        LoRA parameters dict (lora1_name, lora1_strength, etc.).
+    
+    Returns
+    -------
+    Dict
+        The workflow with dynamic LoRA nodes properly generated or removed.
+    """
+    if dynamic_lora_count < 1:
+        return _remove_dynamic_lora_nodes(workflow)
+    
+    return _generate_dynamic_lora_nodes(workflow, dynamic_lora_count, lora_params or {})
+
+
+def _remove_dynamic_lora_nodes(workflow: Dict) -> Dict:
+    """Remove Dynamic LoRA placeholder nodes and bypass upstream to downstream."""
+    # Find the Dynamic LoRA node
+    dynamic_node_id = None
+    for node_id, node in workflow.items():
+        if isinstance(node, dict):
+            title = node.get("_meta", {}).get("title", "")
+            if title.startswith("Dynamic LoRA"):
+                dynamic_node_id = node_id
+                break
+    
+    if dynamic_node_id is None:
+        return workflow
+    
+    # Find the model input reference from the Dynamic LoRA node
+    dynamic_inputs = workflow[dynamic_node_id].get("inputs", {})
+    upstream_node_id = dynamic_inputs.get("model", [])
+    if isinstance(upstream_node_id, list):
+        upstream_id = upstream_node_id[0] if upstream_node_id[0] != "0" else None
+    else:
+        upstream_id = None
+    
+    # Find downstream nodes that reference the dynamic node
+    nodes_to_update = []
+    for node_id, node in workflow.items():
+        if node_id != dynamic_node_id and isinstance(node, dict):
+            node_inputs = node.get("inputs", {})
+            for k, v in node_inputs.items():
+                if isinstance(v, list) and len(v) > 0 and str(v[0]) == dynamic_node_id:
+                    nodes_to_update.append((node_id, k))
+    
+    # Update downstream references to point to the upstream node
+    if upstream_id and nodes_to_update:
+        for node_id, key in nodes_to_update:
+            workflow[node_id]["inputs"][key] = [upstream_id, 0]
+        
+        # Remove the Dynamic LoRA node
+        del workflow[dynamic_node_id]
+    
+    return workflow
+
+
+def _generate_dynamic_lora_nodes(workflow: Dict, count: int, lora_params: Dict) -> Dict:
+    """
+    Generate N LoRA loader nodes chained together and replace the Dynamic LoRA placeholder.
+    
+    For count=2:
+    - Node A (chain start): model -> [upstream, 0], lora -> lora1, strength -> lora1_strength
+    - Node B (chain end): model -> [Node A, 0], lora -> lora2, strength -> lora2_strength
+    - Downstream nodes now reference Node B
+    """
+    # Find the Dynamic LoRA placeholder node
+    dyn_node_id = None
+    dyn_node = None
+    for nid, node in list(workflow.items()):
+        if isinstance(node, dict) and node.get("_meta", {}).get("title", "").startswith("Dynamic LoRA"):
+            dyn_node_id = nid
+            dyn_node = node
+            break
+    
+    if dyn_node_id is None or dyn_node is None:
+        return workflow
+    
+    # Get the upstream node
+    dyn_inputs = dyn_node.get("inputs", {})
+    upstream_ref = dyn_inputs.get("model", [])
+    if isinstance(upstream_ref, list):
+        upstream_id = upstream_ref[0] if len(upstream_ref) > 0 else None
+    else:
+        upstream_id = None
+    
+    # Find downstream nodes that reference the dynamic node
+    downstream_refs = []
+    for nid, node in workflow.items():
+        if nid != dyn_node_id and isinstance(node, dict):
+            for k, v in node.get("inputs", {}).items():
+                if isinstance(v, list) and len(v) > 0 and str(v[0]) == dyn_node_id:
+                    downstream_refs.append((nid, k))
+    
+    # Build the LoRA chain
+    node_ids = []
+    prev_id = upstream_id
+    
+    for i in range(count):
+        lora_idx = i + 1
+        lora_name_key = f'lora{lora_idx}_name'
+        lora_strength_key = f'lora{lora_idx}_strength'
+        
+        lora_name = lora_params.get(lora_name_key, "xl\\add-detail.safetensors")
+        lora_strength = lora_params.get(lora_strength_key, 0.0)
+        
+        model_ref = [str(prev_id), 0] if prev_id else ["9", 0]
+        
+        new_inputs = dict(dyn_node["inputs"])
+        new_inputs["lora_name"] = lora_name
+        new_inputs["strength_model"] = float(lora_strength)
+        new_inputs["model"] = model_ref
+        
+        new_node = {
+            "inputs": new_inputs,
+            "class_type": "LoraLoaderModelOnly",
+            "_meta": {"title": f"Dynamic LoRA {lora_idx}"}
+        }
+        
+        if i == 0:
+            # First node replaces the placeholder node
+            workflow[dyn_node_id] = new_node
+            curr_id = dyn_node_id
+        else:
+            # New node
+            all_ids = set(workflow.keys())
+            next_id = int(dyn_node_id) + 1
+            while str(next_id) in all_ids:
+                next_id += 1
+            workflow[str(next_id)] = new_node
+            curr_id = str(next_id)
+        
+        node_ids.append(curr_id)
+        prev_id = curr_id
+    
+    last_lora_id = node_ids[-1]
+    
+    # Update downstream references
+    for nid, key in downstream_refs:
+        workflow[nid]["inputs"][key] = [last_lora_id, 0]
+    
+    return workflow
+    
+    # Get the upstream node and downstream nodes
+    dyn_inputs = dyn_node.get("inputs", {})
+    upstream_id = dyn_inputs.get("model", [])
+    if isinstance(upstream_id, list):
+        upstream_id = upstream_id[0] if len(upstream_id) > 0 else None
+    else:
+        upstream_id = None
+    
+    # Find downstream nodes that reference the dynamic node
+    downstream_refs = []
+    for nid, node in workflow.items():
+        if nid != dyn_node_id and isinstance(node, dict):
+            for k, v in node.get("inputs", {}).items():
+                if isinstance(v, list) and len(v) > 0 and str(v[0]) == dyn_node_id:
+                    downstream_refs.append((nid, k))
+    
+    # Get LoRA params from workflow params (passed separately)
+    lora_params = getattr(workflow, '_lora_params', {})
+    
+    # Create new LoRA nodes
+    first_lora_id = dyn_node_id
+    last_lora_id = dyn_node_id
+    
+    for i in range(count):
+        lora_idx = i + 1
+        lora_name_key = f'lora{lora_idx}_name'
+        lora_strength_key = f'lora{lora_idx}_strength'
+        
+        lora_name = lora_params.get(lora_name_key, "xl\\add-detail.safetensors")
+        lora_strength = lora_params.get(lora_strength_key, 0.0)
+        
+        if i == 0:
+            # First LoRA node: links to upstream
+            model_ref = [upstream_id, 0] if upstream_id else ["9", 0]
+        else:
+            # Subsequent LoRA nodes: link to previous LoRA node
+            model_ref = [first_lora_id if i == 1 else last_lora_id, 0]
+        
+        new_inputs = {
+            "lora_name": lora_name,
+            "strength_model": float(lora_strength),
+            "model": model_ref
+        }
+        
+        if i == 0:
+            # First node keeps the original class_type
+            new_node = dict(dyn_node)
+            new_node["inputs"] = new_inputs
+            new_node["_meta"] = {"title": f"Dynamic LoRA {lora_idx}"}
+            workflow[dyn_node_id] = new_node
+            last_lora_id = dyn_node_id
+        else:
+            # Need to find a free node ID
+            all_ids = set(workflow.keys())
+            next_id = int(dyn_node_id) + 1
+            while str(next_id) in all_ids:
+                next_id += 1
+            new_node = {
+                "inputs": new_inputs,
+                "class_type": "LoraLoaderModelOnly",
+                "_meta": {"title": f"Dynamic LoRA {lora_idx}"}
+            }
+            workflow[str(next_id)] = new_node
+            last_lora_id = str(next_id)
+        
+        # Update model ref for subsequent iterations
+        first_lora_id = dyn_node_id if i == 0 else first_lora_id
+    
+    # Update downstream references to point to the last LoRA node
+    for nid, key in downstream_refs:
+        workflow[nid]["inputs"][key] = [last_lora_id, 0]
+    
+    # Remove the original Dynamic LoRA placeholder (it's been replaced/updated)
+    if dyn_node_id != last_lora_id:
+        # Only remove if we created additional nodes
+        pass  # The first node was updated in-place, not removed
+    
     return workflow
 
 
@@ -311,9 +559,15 @@ def generate_workflow_from_standard_params(template: str, params: Dict[str, Any]
         extra_lora_strengths=extra_lora_strengths
     )
     param_dict.update(lora_resolved)
+    dynamic_count = lora_resolved.get('dynamic_lora_count', 0)
 
     # Apply placeholders
-    return apply_wan_placeholders(workflow, param_dict)
+    result = apply_wan_placeholders(workflow, param_dict)
+    
+    # Apply dynamic LoRA chaining
+    result = apply_dynamic_lora_chaining(result, dynamic_count, param_dict)
+
+    return result
 
 
 def generate_workflow_for_wan_image(task_path: str, scene_index: int = 0,
@@ -499,9 +753,15 @@ def generate_api_workflow(
     lora_resolved = _resolve_lora_params(
         acts, csv_name, workflow_name=template,
     )
+    dynamic_count = lora_resolved.get('dynamic_lora_count', 0)
     params.update(lora_resolved)
 
-    return apply_wan_placeholders(workflow, params)
+    result = apply_wan_placeholders(workflow, params)
+    
+    # Apply dynamic LoRA chaining
+    result = apply_dynamic_lora_chaining(result, dynamic_count, params)
+
+    return result
 
 
 def load_lora_lookup(csv_path: str = None, filter_type: str = None, workflow_name: str = None) -> Dict[str, List[Dict]]:

@@ -25,7 +25,8 @@ from parameter_extraction import StandardWorkflowParams
 
 
 def log(msg):
-    print(f"[INTEGRATION TEST] {msg}")
+    import codecs
+    sys.stdout.buffer.write(("[INTEGRATION TEST] " + msg + "\n").encode("utf-8"))
 
 
 def get_image_metadata(image_path):
@@ -67,10 +68,9 @@ def extract_params_from_image(image_path, work_id, video_prompt=""):
     metadata = get_image_metadata(image_path)
     job_id = metadata.get("job_id", work_id.split('_')[0] if '_' in work_id else work_id)
     
-    # Extract main_sex_act from metadata (FIXED: this is the key fix!)
+    # Extract main_sex_act from metadata
     main_sex_act = metadata.get("main_sex_act", "")
     if not main_sex_act:
-        # Fallback to image_prompt's sex_act field (PNG metadata from New tab)
         main_sex_act = metadata.get("sex_act", "")
     
     # Build video_pos_prompt from metadata
@@ -121,7 +121,7 @@ def show_lora_nodes(workflow, step_name):
     
     for node_id, node in sorted(workflow.items(), key=lambda x: int(x[0])):
         cls = node.get("class_type", "")
-        if "LoraLoader" in cls or cls == "Lora Loader Stack (rgthree)":
+        if cls == "LoraLoaderModelOnly" or cls == "Lora Loader Stack (rgthree)":
             inputs = node.get("inputs", {})
             title = node.get("_meta", {}).get("title", "N/A")
             print(f"\n  Node {node_id} ({title}):")
@@ -135,6 +135,17 @@ def show_lora_nodes(workflow, step_name):
                 if isinstance(model_ref, list):
                     print(f"    model: [{model_ref[0]}, {model_ref[1]}]")
             print()
+
+
+def count_dynamic_lora_nodes(workflow):
+    """Count the number of Dynamic LoRA nodes in a workflow."""
+    count = 0
+    for node_id, node in workflow.items():
+        title = node.get("_meta", {}).get("title", "")
+        cls = node.get("class_type", "")
+        if cls == "LoraLoaderModelOnly" and title.startswith("Dynamic LoRA"):
+            count += 1
+    return count
 
 
 def main():
@@ -209,6 +220,8 @@ def main():
     )
     save_debug_workflow(workflow_s1, work_id, "1st_sampling")
     show_lora_nodes(workflow_s1, "1st_sampling")
+    n_lora_s1 = count_dynamic_lora_nodes(workflow_s1)
+    log(f"  Dynamic LoRA nodes in 1st_sampling: {n_lora_s1}")
 
     # ============================================================
     # PHASE 3b: UPSCALE (ltx_upscale)
@@ -235,6 +248,8 @@ def main():
     )
     save_debug_workflow(workflow_up, work_id, "upscale")
     show_lora_nodes(workflow_up, "upscale")
+    n_lora_up = count_dynamic_lora_nodes(workflow_up)
+    log(f"  Dynamic LoRA nodes in upscale: {n_lora_up}")
 
     # ============================================================
     # PHASE 3c: 2nd SAMPLING (ltx_2nd_sampling)
@@ -260,6 +275,8 @@ def main():
     )
     save_debug_workflow(workflow_s2, work_id, "2nd_sampling")
     show_lora_nodes(workflow_s2, "2nd_sampling")
+    n_lora_s2 = count_dynamic_lora_nodes(workflow_s2)
+    log(f"  Dynamic LoRA nodes in 2nd_sampling: {n_lora_s2}")
 
     # ============================================================
     # PHASE 4: LATENT DECODE (ltx_decode)
@@ -298,43 +315,56 @@ def main():
     
     for step in ["prep", "1st_sampling", "upscale", "2nd_sampling", "decode"]:
         if step in ["prep", "decode"]:
-            # These templates may not have LoRA nodes, skip
+            # These templates don't have LoRA nodes, skip
             continue
         
         wf = json.load(open(os.path.join(DEBUG_WORKFLOWS_DIR, f"aj5s7_scene4_p1_{step}.json")))
         
-        # Find Distill Lora node (node 9 in 1st_sampling, node 2 in 2nd_sampling)
-        distill_node_id = "9" if step == "1st_sampling" else "2"
-        lora2_node_id = "10" if step == "1st_sampling" else "3"
+        # Find all LoRA nodes
+        distill_nodes = []
+        dynamic_lora_nodes = []
+        for nid, node in wf.items():
+            title = node.get("_meta", {}).get("title", "")
+            cls = node.get("class_type", "")
+            if cls == "LoraLoaderModelOnly":
+                if title == "Distill Lora":
+                    distill_nodes.append(nid)
+                elif title.startswith("Dynamic LoRA"):
+                    dynamic_lora_nodes.append(nid)
         
-        distill_name = wf[distill_node_id]["inputs"].get("lora_name", "N/A")
-        distill_strength = wf[distill_node_id]["inputs"].get("strength_model", "N/A")
-        lora2_name = wf[lora2_node_id]["inputs"].get("lora_name", "N/A")
-        lora2_strength = wf[lora2_node_id]["inputs"].get("strength_model", "N/A")
-        
-        print(f"\n  [{step}]")
-        print(f"    Distill LoRA (node {distill_node_id}): {distill_name} (strength: {distill_strength})")
-        print(f"    Dynamic LoRA 1 (node {lora2_node_id}): {lora2_name} (strength: {lora2_strength})")
+        n_dynamic = len(dynamic_lora_nodes)
+        log(f"\n  [{step}]")
+        log(f"    Distill LoRA nodes: {distill_nodes}")
+        log(f"    Dynamic LoRA nodes: {dynamic_lora_nodes} (count: {n_dynamic})")
         
         # Verify Distill LoRA is NOT replaced
-        expected_distill = "ltx\\ltx-2.3-22b-distilled-lora-384-1.1.safetensors"
-        if distill_name == expected_distill:
-            print(f"    ✓ PASS: Distill LoRA preserved")
-        else:
-            print(f"    ✗ FAIL: Distill LoRA was replaced!")
-            all_ok = False
+        for distill_id in distill_nodes:
+            distill_name = wf[distill_id]["inputs"].get("lora_name", "N/A")
+            expected_distill = "ltx\\ltx-2.3-22b-distilled-lora-384-1.1.safetensors"
+            if distill_name == expected_distill:
+                log(f"    [PASS] Distill LoRA (node {distill_id}) preserved: {distill_name}")
+            else:
+                log(f"    [FAIL] Distill LoRA was replaced! Expected {expected_distill}, got {distill_name}")
+                all_ok = False
         
-        # Verify Dynamic LoRA 1 is from CSV lookup (lying_cowgirl -> NSFW_furryv2.safetensors)
-        if "NSFW_furryv2" in str(lora2_name):
-            print(f"    ✓ PASS: Dynamic LoRA from CSV lookup")
-        else:
-            print(f"    ✗ FAIL: Dynamic LoRA not from CSV lookup!")
-            all_ok = False
+        # Verify Dynamic LoRA nodes use correct LoRA names from CSV
+        for dlora_id in dynamic_lora_nodes:
+            dlora_name = wf[dlora_id]["inputs"].get("lora_name", "N/A")
+            dlora_strength = wf[dlora_id]["inputs"].get("strength_model", "N/A")
+            log(f"    Dynamic LoRA node {dlora_id}: {dlora_name} (strength: {dlora_strength})")
+            
+            # Check that NSFW_furryv2 is in the first LoRA
+            if dlora_id == dynamic_lora_nodes[0]:
+                if "NSFW_furryv2" in str(dlora_name):
+                    log(f"    [PASS] First LoRA uses NSFW_furryv2 from CSV")
+                else:
+                    log(f"    [FAIL] First LoRA should use NSFW_furryv2 but got: {dlora_name}")
+                    all_ok = False
     
     if all_ok:
-        print("\n  ✓✓✓ ALL CHECKS PASSED ✓✓✓")
+        log("\n  *** ALL CHECKS PASSED ***")
     else:
-        print("\n  ✗✗✗ SOME CHECKS FAILED ✗✗✗")
+        log("\n  *** SOME CHECKS FAILED ***")
     
     log("")
     log("Generated workflow files:")

@@ -50,11 +50,11 @@
   "4": {
     "inputs": {
       "positive": [
-        "9",
+        "15",
         0
       ],
       "negative": [
-        "10",
+        "14",
         0
       ],
       "latent": [
@@ -118,6 +118,82 @@
   },
   "9": {
     "inputs": {
+      "lora_name": "ltx\\ltx-2.3-22b-distilled-lora-384-1.1.safetensors",
+      "strength_model": 0.5,
+      "model": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Distill Lora"
+    }
+  },
+  "10": {
+    "inputs": {
+      "lora_name": "**dynamic_lora_chain_start**",
+      "strength_model": "**dynamic_lora_chain_strength**",
+      "model": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Dynamic LoRA (chain start)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "12": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "13": {
+    "inputs": {
+      "cfg": 1,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "15",
+        0
+      ],
+      "negative": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "CFGGuider",
+    "_meta": {
+      "title": "CFGGuider"
+    }
+  },
+  "14": {
+    "inputs": {
       "conditioning_file": "**load_neg_conditioning**"
     },
     "class_type": "StarConditioningLoader",
@@ -125,7 +201,7 @@
       "title": "**negative_conditioning_load"
     }
   },
-  "10": {
+  "15": {
     "inputs": {
       "conditioning_file": "**load_pos_conditioning**"
     },
@@ -134,7 +210,7 @@
       "title": "**positive_conditioning_load"
     }
   },
-  "11": {
+  "16": {
     "inputs": {
       "filename": "**save_pos_conditioning**",
       "conditioning": [
@@ -147,7 +223,7 @@
       "title": "**positive_conditioning"
     }
   },
-  "12": {
+  "17": {
     "inputs": {
       "filename": "**save_neg_conditioning**",
       "conditioning": [
@@ -160,10 +236,10 @@
       "title": "**negative_conditioning"
     }
   },
-  "14": {
+  "18": {
     "inputs": {
       "tensor": [
-        "11",
+        "16",
         0
       ]
     },
@@ -172,10 +248,10 @@
       "title": "Show Tensor Shape"
     }
   },
-  "15": {
+  "19": {
     "inputs": {
       "tensor": [
-        "12",
+        "17",
         0
       ]
     },
@@ -184,7 +260,7 @@
       "title": "Show Tensor Shape"
     }
   },
-  "16": {
+  "20": {
     "inputs": {
       "filename_prefix": "latents/**save_latent**",
       "samples": [
@@ -197,7 +273,7 @@
       "title": "**latent_out"
     }
   },
-  "18": {
+  "21": {
     "inputs": {
       "image": "**load_image**"
     },
@@ -206,21 +282,21 @@
       "title": "**image"
     }
   },
-  "19": {
+  "22": {
     "inputs": {
       "resize_type": "scale dimensions",
       "resize_type.width": [
-        "22",
+        "25",
         0
       ],
       "resize_type.height": [
-        "21",
+        "24",
         0
       ],
       "resize_type.crop": "center",
       "scale_method": "lanczos",
       "input": [
-        "18",
+        "21",
         0
       ]
     },
@@ -229,7 +305,7 @@
       "title": "Resize Image/Mask"
     }
   },
-  "21": {
+  "24": {
     "inputs": {
       "Number": "**height**"
     },
@@ -238,7 +314,7 @@
       "title": "**height"
     }
   },
-  "22": {
+  "25": {
     "inputs": {
       "Number": "**width**"
     },

@@ -234,7 +234,31 @@ def apply_placeholders_unified(workflow_json: Dict[str, Any], params_dict: Dict[
         inputs = node.get("inputs", {})
 
         for k, v in inputs.items():
+            # Handle non-string values (e.g., None/null from JSON) by looking up the key in params_dict
             if not isinstance(v, str):
+                if k in params_dict:
+                    repl_val = params_dict[k]
+                    should_convert = ("strength" in k or
+                                      "seed" in k or
+                                      "random" in k or
+                                      "width" in k or
+                                      "height" in k or
+                                      "fps" in k or
+                                      "steps" in k or
+                                      "shift" in k or
+                                      "denoise" in k or
+                                      "cfg" in k or
+                                      cls == "JWInteger")
+                    if should_convert:
+                        try:
+                            if "strength" in k or cls == "Float":
+                                inputs[k] = float(repl_val)
+                            else:
+                                inputs[k] = int(repl_val)
+                        except (ValueError, TypeError):
+                            inputs[k] = str(repl_val)
+                    else:
+                        inputs[k] = str(repl_val)
                 continue
 
             new_val = v

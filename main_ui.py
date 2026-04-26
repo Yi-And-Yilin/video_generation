@@ -29,7 +29,7 @@ from new_tab_workflow import run_new_tab_workflow
 # Import workflow generator
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "ltx"))
-from workflow_generator import generate_api_workflow, generate_workflow_for_wan_image, load_lora_lookup
+from workflow_generator import generate_api_workflow, generate_workflow_for_wan_image, load_lora_lookup, _resolve_lora_params
 
 # Unified workflow selector
 from workflow_selector import TemplateCatalog, apply_placeholders_unified
@@ -1116,14 +1116,20 @@ class VideoGenerationApp:
                             params_dict["scheduler"] = "simple"
                             params_dict["checkpoint"] = "zImageTurboNSFW_50BF16Diffusion.safetensors"
                             params_dict["random_number"] = params.random_number
-                            for i in range(1, 6):
-                                params_dict[f"lora{i}_name"] = "xl\\add-detail.safetensors"
-                                params_dict[f"lora{i}_strength"] = 0.0
+                            params_dict["seed"] = params.random_number
+                            # Dynamic LoRA lookup from lora_lookup.csv for z-image workflow
+                            acts = params.main_sex_act if hasattr(params, 'main_sex_act') else []
+                            lora_resolved = _resolve_lora_params(
+                                acts,
+                                "lora_lookup.csv",
+                                workflow_name="z-image",
+                                filter_type="image",
+                            )
+                            params_dict.update(lora_resolved)
                         else:
                             params_dict = dict(params.for_wan_image())
                             lora_names = [p.get("lora_name", "") for p in getattr(params, "sex_loras", [])]
                             lora_strengths = [0.7] * len(getattr(params, "sex_loras", []))
-                            from workflow_generator import _resolve_lora_params
                             lora_resolved = _resolve_lora_params(
                                 params.main_sex_act if hasattr(params, 'main_sex_act') else [],
                                 "image_lora_lookup.csv",

@@ -1110,10 +1110,6 @@ class VideoGenerationApp:
                             params_dict = dict(params.for_wan_image())
                             params_dict["width"] = params.width
                             params_dict["height"] = params.height
-                            params_dict["steps"] = 8
-                            params_dict["cfg"] = 1
-                            params_dict["sampler_name"] = "res_multistep"
-                            params_dict["scheduler"] = "simple"
                             params_dict["checkpoint"] = "zImageTurboNSFW_50BF16Diffusion.safetensors"
                             params_dict["random_number"] = params.random_number
                             params_dict["seed"] = params.random_number

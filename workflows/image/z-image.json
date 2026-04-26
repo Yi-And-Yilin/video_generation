@@ -12,6 +12,60 @@
       "title": "Save Image"
     }
   },
+  "15": {
+    "inputs": {
+      "lora_01": "**lora1_name**",
+      "strength_01": "**lora1_strength**",
+      "lora_02": "**lora2_name**",
+      "strength_02": "**lora2_strength**",
+      "lora_03": "**lora3_name**",
+      "strength_03": "**lora3_strength**",
+      "lora_04": "**lora4_name**",
+      "strength_04": "**lora4_strength**",
+      "model": [
+        "57:28",
+        0
+      ],
+      "clip": [
+        "57:30",
+        0
+      ]
+    },
+    "class_type": "Lora Loader Stack (rgthree)",
+    "_meta": {
+      "title": "Lora Loader Stack (rgthree)"
+    }
+  },
+  "57:29": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "57:13": {
+    "inputs": {
+      "width": "**width**",
+      "height": "**height**",
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "57:28": {
+    "inputs": {
+      "unet_name": "zImageTurboNSFW_70BF16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
   "57:30": {
     "inputs": {
       "clip_name": "zImageTurbo_textEncoder.safetensors",
@@ -23,13 +77,30 @@
       "title": "Load CLIP"
     }
   },
-  "57:29": {
+  "57:11": {
     "inputs": {
-      "vae_name": "ae.safetensors"
+      "shift": 3,
+      "model": [
+        "15",
+        0
+      ]
     },
-    "class_type": "VAELoader",
+    "class_type": "ModelSamplingAuraFlow",
     "_meta": {
-      "title": "Load VAE"
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "57:27": {
+    "inputs": {
+      "text": "**image_pos_prompt**",
+      "clip": [
+        "15",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
     }
   },
   "57:33": {
@@ -44,76 +115,13 @@
       "title": "ConditioningZeroOut"
     }
   },
-  "57:8": {
-    "inputs": {
-      "samples": [
-        "57:3",
-        0
-      ],
-      "vae": [
-        "57:29",
-        0
-      ]
-    },
-    "class_type": "VAEDecode",
-    "_meta": {
-      "title": "VAE Decode"
-    }
-  },
-  "57:28": {
-    "inputs": {
-      "unet_name": "zImageTurboNSFW_50BF16Diffusion.safetensors",
-      "weight_dtype": "default"
-    },
-    "class_type": "UNETLoader",
-    "_meta": {
-      "title": "Load Diffusion Model"
-    }
-  },
-  "57:27": {
-    "inputs": {
-      "text": "**image_pos_prompt**",
-      "clip": [
-        "57:30",
-        0
-      ]
-    },
-    "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
-    }
-  },
-  "57:13": {
-    "inputs": {
-      "width": "**width**",
-      "height": "**height**",
-      "batch_size": 1
-    },
-    "class_type": "EmptySD3LatentImage",
-    "_meta": {
-      "title": "EmptySD3LatentImage"
-    }
-  },
-  "57:11": {
-    "inputs": {
-      "shift": 3,
-      "model": [
-        "57:28",
-        0
-      ]
-    },
-    "class_type": "ModelSamplingAuraFlow",
-    "_meta": {
-      "title": "ModelSamplingAuraFlow"
-    }
-  },
   "57:3": {
     "inputs": {
-      "seed": "**random_number**",
-      "steps": "**steps**",
-      "cfg": "**cfg**",
-      "sampler_name": "**sampler_name**",
-      "scheduler": "**scheduler**",
+      "seed": null,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
       "denoise": 1,
       "model": [
         "57:11",
@@ -135,6 +143,22 @@
     "class_type": "KSampler",
     "_meta": {
       "title": "KSampler"
+    }
+  },
+  "57:8": {
+    "inputs": {
+      "samples": [
+        "57:3",
+        0
+      ],
+      "vae": [
+        "57:29",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
     }
   }
 }

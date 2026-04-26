@@ -5,8 +5,7 @@ Call the `answer` tool to design multiple locations for a movie scene and the ch
 
 ## Characters
 - **User Requirements:** {{user_requirements}}
-- **Male Character:** {{male_character}}
-- **Female Character:** {{female_character}}
+- **Character_Design:** {{character_design}}
 
 ## Rules:
 1. Design exactly 3 different locations (or as specified in user requirements).

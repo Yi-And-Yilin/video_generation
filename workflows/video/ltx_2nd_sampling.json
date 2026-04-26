@@ -132,7 +132,7 @@
   },
   "10": {
     "inputs": {
-      "noise_seed": 0
+      "noise_seed": "**random_number**"
     },
     "class_type": "RandomNoise",
     "_meta": {

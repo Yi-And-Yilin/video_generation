@@ -16,7 +16,7 @@
               },
               "nationality": {
                 "type": "string",
-                "description": "Nationality. One word if possible."
+                "description": "select one of thes: East Asian,Southeast Asian,South Asian,Middle Eastern,Caucasian,African,Latino, Indigenous American,Pacific Islander"
               },
               "height": {
                 "type": "string",
@@ -32,10 +32,10 @@
               },
               "personality": {
                 "type": "string",
-                "description": "Personality trait. One word if possible."
+                "description": "Personality trait. "
               }
             },
-            "required": ["age", "nationality", "height", "body_shape", "hair_style", "personality"],
+            "required": ["age", "nationality", "height", "body_shape", "hair_style","penis", "personality"],
             "additionalProperties": false
           },
           "female": {
@@ -47,7 +47,7 @@
               },
               "nationality": {
                 "type": "string",
-                "description": "Nationality. One word if possible."
+                "description": "select one of thes: East Asian,Southeast Asian,South Asian,Middle Eastern,Caucasian,African,Latino, Indigenous American,Pacific Islander"
               },
               "height": {
                 "type": "string",
@@ -59,7 +59,7 @@
               },
               "hair_style": {
                 "type": "string",
-                "description": "Hair style. One of: Sleek low bun, Double buns, Bob cut, Long Bob, Pixie cut, Shag cut, Layered cut, Straight long hair, Wavy hair, Curly hair, French braid, Dutch braid, Fishtail braid, Side-swept bangs, Blunt bangs, Curtain bangs"
+                "description": "Hair style. For example:Long straight hair, long wavy hair, long curly hair, high ponytail, low ponytail, messy bun, sleek top knot, classic bob, long bob, mid-length layered cut, pixie cut, half-up half-down style, shoulder-length blunt cut, curtain bangs, side-swept bangs, blunt bangs, wispy bangs, beach waves, French braid, Dutch braid, fishtail braid, braided pigtails, space buns, low sleek bun, butterfly cut, wolf cut, shag cut, afro, box braids, cornrows, bottleneck bangs, face-framing layers, voluminous blowout, Hollywood waves, asymmetrical bob, inverted bob, graduated bob, Italian bob, French bob, micro bangs, choppy layers, feathered cut, V-cut long hair, U-cut long hair, side braid, waterfall braid, crown braid, bubble ponytail, slicked-back wet look, high bun with tendrils, bantu knots, dreadlocks, Senegalese twists, passion twists, goddess braids, finger waves, victory rolls, pin curls, beehive, Gibson girl bun, buzz cut, undercut with long hair, side-shave, faux hawk, mohawk, mullet, hime cut, jellyfish cut, bowl cut, wedge cut, pageboy cut, Chelsea cut, teased crown, crinkled hair, crimped hair, tapered afro, finger coils, spiral curls, corkscrew ringlets, silk press, relaxed straight hair, wash-and-go curls, halo braid, milkmaid braids, pull-through braid, four-strand braid, rope twist ponytail, scrunched waves, permed curls, shaggy lob, blunt micro-bob, choppy pixie, spiky pixie, skunk stripe streaks, money piece highlights, dip-dyed ends, 80s teased perm, liberty spikes, structural avant-garde cut, and a fully shaved head."
               },
 			  "nipples": {
                 "type": "string",
@@ -76,9 +76,30 @@
             },
             "required": ["age", "nationality", "height", "body_shape", "hair_style", "personality"],
             "additionalProperties": false
-          }
+          },
+		  "character_relationship": {
+		  "type": "object",
+		  "properties": {
+			"relationship_type": {
+			  "type": "string",
+			  "description": "The social or familial dynamic between the two characters. Example: 'Student and Teacher', 'Mother and Son', or 'Husband and Wife'."
+			},
+			"female_to_male_address_terms": {
+			  "type": "array",
+			  "items": { "type": "string" },
+			  "description": "Specific honorifics or terms of address the female character uses for the male character in Chinese. Examples: '小明', '亲爱的', '儿子', '爸爸'."
+			},
+			"male_to_female_address_terms": {
+			  "type": "array",
+			  "items": { "type": "string" },
+			  "description": "Specific honorifics or terms of address the male character uses for the female character in Chinese. Examples: '老师', '亲爱的', '妈妈', '女儿'."
+			}
+		  },
+		  "required": ["relationship_type", "female_to_male_address_terms", "male_to_female_address_terms"],
+		  "additionalProperties": false
+		}
         },
-        "required": ["male", "female"],
+        "required": ["male", "female","character_relationship"],
         "additionalProperties": false
       }
     }

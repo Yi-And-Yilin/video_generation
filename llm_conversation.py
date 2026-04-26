@@ -35,7 +35,9 @@ def render_md_template(md_file_path: str, **kwargs) -> str:
             return str(kwargs[key])
         return match.group(0)
 
-    return pattern.sub(replacer, content)
+    rendered = pattern.sub(replacer, content)
+    logger.info(f"[PROMPT] Parsed system prompt from '{path.name}':\n{rendered}")
+    return rendered
 
 
 class LLMUtils:

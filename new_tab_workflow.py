@@ -254,24 +254,19 @@ def run_new_tab_workflow(user_requirements: str, status_callback=None, stop_even
         json.dump(result, f, indent=4, ensure_ascii=False)
 
     # ============ Phase 2: Scene / Location Design ============
-    male_char = result["character_design"].get("male", {})
-    female_char = result["character_design"].get("female", {})
-
     if mode == "Z":
         scene_schema = load_tool_schema("scene_design_z")
         scene_system_prompt = load_prompt_template(
             "scene_design_z",
             user_requirements=user_requirements,
-            male_character=json.dumps(male_char, ensure_ascii=False),
-            female_character=json.dumps(female_char, ensure_ascii=False)
+            character_design=json.dumps(result["character_design"], ensure_ascii=False)
         )
     else:
         scene_schema = load_tool_schema("location_design")
         scene_system_prompt = load_prompt_template(
             "location_design",
             user_requirements=user_requirements,
-            male_character=json.dumps(male_char, ensure_ascii=False),
-            female_character=json.dumps(female_char, ensure_ascii=False)
+            character_design=json.dumps(result["character_design"], ensure_ascii=False)
         )
     conv2 = Conversation(system_prompt=scene_system_prompt, tool_schema=scene_schema)
 
@@ -525,8 +520,7 @@ def _run_video_prompt_generation(locations, character_design, user_requirements,
         video_system_prompt = load_prompt_template(
             "video_prompting",
             user_requirements=user_requirements,
-            male_character=json.dumps(character_design.get("male", {}), ensure_ascii=False),
-            female_character=json.dumps(character_design.get("female", {}), ensure_ascii=False),
+            character_design=json.dumps(character_design, ensure_ascii=False),
             locations_with_prompts=json.dumps(locations_with_prompts, ensure_ascii=False)
         )
     except Exception as e:

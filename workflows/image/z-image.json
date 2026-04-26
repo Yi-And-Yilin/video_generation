@@ -58,7 +58,7 @@
   },
   "57:28": {
     "inputs": {
-      "unet_name": "zImageTurboNSFW_70BF16.safetensors",
+      "unet_name": "zImageTurbo_turbo.safetensors",
       "weight_dtype": "default"
     },
     "class_type": "UNETLoader",

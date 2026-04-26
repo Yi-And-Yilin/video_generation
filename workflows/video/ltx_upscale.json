@@ -76,7 +76,7 @@
         2
       ],
       "image": [
-        "19",
+        "22",
         0
       ],
       "latent": [
@@ -133,7 +133,7 @@
   "10": {
     "inputs": {
       "lora_name": "**dynamic_lora_chain_start**",
-      "strength_model": "**dynamic_lora_chain_strength**",
+      "strength_model": null,
       "model": [
         "9",
         0

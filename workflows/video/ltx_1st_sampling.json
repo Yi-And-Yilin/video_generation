@@ -10,7 +10,7 @@
   },
   "3": {
     "inputs": {
-      "noise_seed": null
+      "noise_seed": "**random_number**"
     },
     "class_type": "RandomNoise",
     "_meta": {

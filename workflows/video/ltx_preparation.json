@@ -83,12 +83,6 @@
   "7": {
     "inputs": {
       "expression": "a/2",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "values.a": [
         "3",
         0
@@ -198,12 +192,6 @@
   "17": {
     "inputs": {
       "expression": "a/2",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "values.a": [
         "5",
         0
@@ -241,7 +229,7 @@
         "18",
         0
       ],
-      "frame_rate": 25,
+      "frame_rate": 24,
       "batch_size": 1,
       "audio_vae": [
         "19",
@@ -267,12 +255,6 @@
   "24": {
     "inputs": {
       "text": "**video_pos_prompt**",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "clip": [
         "23",
         0
@@ -287,7 +269,7 @@
     "inputs": {
       "filename": "**save_pos_conditioning**",
       "conditioning": [
-        "24",
+        "31",
         0
       ]
     },
@@ -299,7 +281,7 @@
   "26": {
     "inputs": {
       "tensor": [
-        "31",
+        "25",
         0
       ]
     },
@@ -311,12 +293,6 @@
   "27": {
     "inputs": {
       "text": "**video_neg_prompt**",
-      "speak_and_recognation": {
-        "__value__": [
-          false,
-          true
-        ]
-      },
       "clip": [
         "23",
         0
@@ -331,8 +307,8 @@
     "inputs": {
       "filename": "**save_neg_conditioning**",
       "conditioning": [
-        "27",
-        0
+        "31",
+        1
       ]
     },
     "class_type": "StarConditioningSaver",
@@ -343,8 +319,8 @@
   "29": {
     "inputs": {
       "tensor": [
-        "31",
-        1
+        "28",
+        0
       ]
     },
     "class_type": "easy showTensorShape",
@@ -367,13 +343,13 @@
   },
   "31": {
     "inputs": {
-      "frame_rate": 25,
+      "frame_rate": 24,
       "positive": [
-        "25",
+        "24",
         0
       ],
       "negative": [
-        "28",
+        "27",
         0
       ]
     },

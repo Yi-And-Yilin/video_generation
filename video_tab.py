@@ -728,16 +728,14 @@ class VideoTabUI:
             try:
                 from projects.ltx.batch_runner import BatchRunner
                 
-                # Extract main_sex_act from image metadata (from New tab)
-                main_action = ""
-                if current_image_path and os.path.exists(current_image_path):
+                # Extract sex_act from row's Sex Act field (user-editable, sourced from image metadata)
+                main_action = row["sex_act"].get().strip() if "sex_act" in row else ""
+                if not main_action and current_image_path and os.path.exists(current_image_path):
                     metadata = self._get_metadata_from_image(current_image_path)
-                    main_sex_act = metadata.get("main_sex_act", "")
-                    if main_sex_act:
-                        main_action = main_sex_act
-                    elif video_prompt:
-                        lines = video_prompt.split('\n')
-                        main_action = lines[0][:50] if lines else ""
+                    main_action = metadata.get("sex_act", "")
+                if not main_action and video_prompt:
+                    lines = video_prompt.split('\n')
+                    main_action = lines[0][:50] if lines else ""
                 
                 # Build task from row
                 tasks = [{

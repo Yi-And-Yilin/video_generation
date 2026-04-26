@@ -585,12 +585,10 @@ class VideoGenerationApp:
                             new_val = new_val.replace(placeholder, str(repl_val))
                 inputs[k] = new_val
 
-        # Apply dynamic LoRA chaining if multiple LoRAs found
-        if lora_count > 1:
-            lora_params = {k.replace("**", "").replace("**", ""): v for k, v in lora_replacements.items()}
-            workflow_json = apply_dynamic_lora_chaining(workflow_json, lora_count, lora_params)
-        elif lora_count == 0:
-            workflow_json = apply_dynamic_lora_chaining(workflow_json, 0, {})
+        # Apply dynamic LoRA chaining if LoRAs found
+        if lora_count >= 1:
+            lora_params = {k.replace("**", ""): v for k, v in lora_replacements.items()}
+            wf_json = apply_dynamic_lora_chaining(wf_json, lora_count, lora_params)
 
         return wf_json
 

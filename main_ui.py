@@ -4,7 +4,7 @@ import shutil
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext, filedialog
-from PIL import ImageGrab
+from PIL import Image, ImageGrab
 import random
 import string
 import io
@@ -23,7 +23,9 @@ from new_tab_workflow import run_new_tab_workflow
 # Import workflow generator
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "projects", "ltx"))
-from workflow_generator import generate_api_workflow, generate_workflow_for_wan_image
+# pylint: disable=import-error
+from workflow_generator import generate_api_workflow, generate_workflow_for_wan_image, _resolve_lora_params
+# pylint: enable=import-error
 
 
 
